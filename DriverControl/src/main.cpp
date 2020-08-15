@@ -1,5 +1,6 @@
 #include "vex.h"
 #include <algorithm>
+#include <cmath>
 
 using namespace vex;
 
@@ -41,11 +42,15 @@ int main() {
     float driveY = Controller.Axis3.position(percentUnits::pct);
   #if NORMALIZE_DIAGONALS
     float denominator = std::max(std::abs(driveX), std::abs(driveY));
+    float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
   #else
     float denominator = 100;
+    float euclidianDistance = 1;
   #endif
-    float normalizedX = denominator == 0 ? 0 : (driveX / denominator * 100);
-    float normalizedY = denominator == 0 ? 0 : (driveY / denominator * 100);
+    Controller.Screen.setCursor(0, 0);
+    Controller.Screen.print(euclidianDistance);
+    float normalizedX = denominator == 0 ? 0 : (driveX / denominator * 100) * euclidianDistance;
+    float normalizedY = denominator == 0 ? 0 : (driveY / denominator * 100) * euclidianDistance;
     float rot = Controller.Axis1.position(percentUnits::pct);
     MotorA.spin(directionType::fwd, (normalizedX + normalizedY + rot) * speed, velocityUnits::pct);
     MotorB.spin(directionType::fwd, (normalizedX - normalizedY - rot) * speed, velocityUnits::pct);
