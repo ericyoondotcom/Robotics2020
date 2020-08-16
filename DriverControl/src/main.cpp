@@ -7,6 +7,8 @@ using namespace vex;
 // Turn this on to make the robot able to go full speed when going diagonal. However, movement may feel less natural.
 #define NORMALIZE_DIAGONALS true
 
+#define CONTROLLER_DEADZONE 3
+
 brain Brain;
 controller Controller;
 motor MotorA = motor(PORT1, ratio18_1, false);
@@ -40,6 +42,12 @@ int main() {
 
     float driveX = Controller.Axis4.position(percentUnits::pct);
     float driveY = Controller.Axis3.position(percentUnits::pct);
+    if(std::abs(driveX) < CONTROLLER_DEADZONE){
+      driveX = 0;
+    }
+    if(std::abs(driveY) < CONTROLLER_DEADZONE){
+      driveY = 0;
+    }
   #if NORMALIZE_DIAGONALS
     float denominator = std::max(std::abs(driveX), std::abs(driveY));
     float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
@@ -52,6 +60,9 @@ int main() {
     float normalizedX = denominator == 0 ? 0 : (driveX / denominator * 100) * euclidianDistance;
     float normalizedY = denominator == 0 ? 0 : (driveY / denominator * 100) * euclidianDistance;
     float rot = Controller.Axis1.position(percentUnits::pct);
+    if(std::abs(rot) < CONTROLLER_DEADZONE){
+      rot = 0;
+    }
     MotorA.spin(directionType::fwd, (normalizedX + normalizedY + rot) * speed, velocityUnits::pct);
     MotorB.spin(directionType::fwd, (normalizedX - normalizedY - rot) * speed, velocityUnits::pct);
     MotorC.spin(directionType::fwd, (normalizedX + normalizedY - rot) * speed, velocityUnits::pct);
