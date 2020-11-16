@@ -1,7 +1,7 @@
 #include "vex.h"
 #include <algorithm>
 #include <cmath>
-
+//beans
 using namespace vex;
 
 // Turn this on to make the robot able to go full speed when going diagonal. However, movement may feel less natural.
