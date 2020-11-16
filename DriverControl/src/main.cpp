@@ -5,7 +5,7 @@
 using namespace vex;
 
 // Turn this on to make the robot able to go full speed when going diagonal. However, movement may feel less natural.
-#define NORMALIZE_DIAGONALS true
+#define NORMALIZE_DIAGONALS false
 
 #define CONTROLLER_DEADZONE 3
 
@@ -14,7 +14,7 @@ controller Controller;
 motor MotorA = motor(PORT1, ratio18_1, false);
 motor MotorB = motor(PORT11, ratio18_1, true);
 motor MotorC = motor(PORT14, ratio18_1, true);
-motor MotorD = motor(PORT10, ratio18_1, false);
+motor MotorD = motor(PORT8, ratio18_1, false);
 
 void preDriver(){
   MotorA.setBrake(brakeType::hold);
@@ -38,25 +38,40 @@ int main() {
     }
     else if(Controller.ButtonB.pressing()){
       speed = .3;
+      // speed = 0;
     }
-
-    float driveX = Controller.Axis4.position(percentUnits::pct);
-    float driveY = Controller.Axis3.position(percentUnits::pct);
+  
+    float driveX = Controller.Axis4.position();
+    float driveY = Controller.Axis3.position();
     if(std::abs(driveX) < CONTROLLER_DEADZONE){
       driveX = 0;
     }
     if(std::abs(driveY) < CONTROLLER_DEADZONE){
       driveY = 0;
     }
+    
   #if NORMALIZE_DIAGONALS
     float denominator = std::max(std::abs(driveX), std::abs(driveY));
     float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
+    if(euclidianDistance > 1) euclidianDistance = 1;
   #else
     float denominator = 100;
     float euclidianDistance = 1;
   #endif
-    Controller.Screen.setCursor(0, 0);
-    Controller.Screen.print(euclidianDistance);
+    if(Controller.ButtonDown.pressing()){
+      Controller.Screen.setCursor(0, 0);
+      Controller.Screen.clearScreen();
+      // Controller.Screen.print(driveX);
+      // Controller.Screen.newLine();
+      // Controller.Screen.print(driveY);
+      // Controller.Screen.newLine();
+      // Controller.Screen.print(euclidianDistance);
+      Controller.Screen.print(MotorD.temperature(temperatureUnits::fahrenheit));
+      Controller.Screen.newLine();
+      Controller.Screen.print(MotorA.temperature(temperatureUnits::fahrenheit));
+      Controller.Screen.newLine();
+      
+    }
     float normalizedX = denominator == 0 ? 0 : (driveX / denominator * 100) * euclidianDistance;
     float normalizedY = denominator == 0 ? 0 : (driveY / denominator * 100) * euclidianDistance;
     float rot = Controller.Axis1.position(percentUnits::pct);
