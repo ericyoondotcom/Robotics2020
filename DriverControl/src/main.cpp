@@ -9,18 +9,44 @@ using namespace vex;
 
 #define CONTROLLER_DEADZONE 3
 
+#define ROLLER_SPEED_FWD 185
+#define ROLLER_SPEED_REV 160
+#define INTAKE_SPEED_FWD 150
+#define INTAKE_SPEED_REV 75
+
 brain Brain;
 controller Controller;
-motor MotorA = motor(PORT1, ratio18_1, false);
-motor MotorB = motor(PORT11, ratio18_1, true);
-motor MotorC = motor(PORT14, ratio18_1, true);
-motor MotorD = motor(PORT8, ratio18_1, false);
+motor MotorA = motor(PORT11, ratio18_1, false); // Front Left
+motor MotorB = motor(PORT3, ratio18_1, true); // Back Left
+motor MotorC = motor(PORT2, ratio18_1, true); // Back Right
+motor MotorD = motor(PORT1, ratio18_1, false); // Front Right
+motor IntakeL = motor(PORT14, ratio18_1, false);
+motor IntakeR = motor(PORT12, ratio18_1, true);
+motor RollerF = motor(PORT13, ratio18_1, true);
+motor RollerB = motor(PORT15, ratio18_1, false);
 
 void preDriver(){
   MotorA.setBrake(brakeType::hold);
   MotorB.setBrake(brakeType::hold);
   MotorC.setBrake(brakeType::hold);
   MotorD.setBrake(brakeType::hold);
+  IntakeL.setBrake(brakeType::brake);
+  IntakeR.setBrake(brakeType::brake);
+  RollerF.setBrake(brakeType::brake);
+  RollerB.setBrake(brakeType::brake);
+}
+
+void pointTurn(float degrees){
+  float degreesConversion = 6.5;
+  float speed = 50;
+  
+  MotorA.rotateFor(degrees * degreesConversion, rotationUnits::deg, speed, velocityUnits::pct, false);
+  MotorB.rotateFor(-degrees * degreesConversion, rotationUnits::deg, speed, velocityUnits::pct, false);
+  MotorC.rotateFor(-degrees * degreesConversion, rotationUnits::deg, speed, velocityUnits::pct, false);
+  MotorD.rotateFor(degrees * degreesConversion, rotationUnits::deg, speed, velocityUnits::pct, false);
+  while(MotorA.isSpinning() || MotorB.isSpinning() || MotorC.isSpinning() || MotorD.isSpinning()){
+    task::sleep(20);
+  }
 }
 
 int main() {
@@ -82,6 +108,30 @@ int main() {
     MotorB.spin(directionType::fwd, (normalizedX - normalizedY - rot) * speed, velocityUnits::pct);
     MotorC.spin(directionType::fwd, (normalizedX + normalizedY - rot) * speed, velocityUnits::pct);
     MotorD.spin(directionType::fwd, (normalizedX - normalizedY + rot) * speed, velocityUnits::pct);
+
+
+    if(Controller.ButtonR2.pressing()){
+      bool reverse = Controller.ButtonL2.pressing();
+    
+      RollerF.spin(directionType::fwd, reverse ? ROLLER_SPEED_REV : ROLLER_SPEED_FWD, velocityUnits::rpm);
+      RollerB.spin(reverse ? directionType::fwd : directionType::rev, reverse ? ROLLER_SPEED_REV : ROLLER_SPEED_FWD, velocityUnits::rpm);
+    }else{
+      RollerF.stop();
+      RollerB.stop();
+    }
+
+    if(Controller.ButtonR1.pressing()){
+      IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::rpm);
+      IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::rpm);
+    } else if(Controller.ButtonL1.pressing()){
+      IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::rpm);
+      IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::rpm);
+    } else {
+      IntakeL.stop();
+      IntakeR.stop();
+    }
+
     task::sleep(20);
   }
 }
+
