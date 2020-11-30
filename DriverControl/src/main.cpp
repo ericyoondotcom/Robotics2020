@@ -1,6 +1,7 @@
 #include "vex.h"
 #include <algorithm>
 #include <cmath>
+#include <stdlib.h>
 
 using namespace vex;
 
@@ -14,16 +15,32 @@ using namespace vex;
 #define INTAKE_SPEED_FWD 150
 #define INTAKE_SPEED_REV 75
 
+#define MACROS_ORTHOGONAL_SPEED 75
+
 brain Brain;
 controller Controller;
+
+// REAL BRAIN
+// motor MotorA = motor(PORT11, ratio18_1, false); // Front Left
+// motor MotorB = motor(PORT3, ratio18_1, true); // Back Left
+// motor MotorC = motor(PORT2, ratio18_1, true); // Back Right
+// motor MotorD = motor(PORT1, ratio18_1, false); // Front Right
+// motor IntakeL = motor(PORT14, ratio18_1, false);
+// motor IntakeR = motor(/*PORT12*/ PORT16, ratio18_1, true);
+// motor RollerF = motor(PORT13, ratio18_1, true);
+// motor RollerB = motor(PORT15, ratio18_1, false);
+// inertial Gyro = inertial(PORT12);
+
+// 2ND BRAIN
 motor MotorA = motor(PORT11, ratio18_1, false); // Front Left
-motor MotorB = motor(PORT3, ratio18_1, true); // Back Left
-motor MotorC = motor(PORT2, ratio18_1, true); // Back Right
-motor MotorD = motor(PORT1, ratio18_1, false); // Front Right
-motor IntakeL = motor(PORT14, ratio18_1, false);
-motor IntakeR = motor(PORT12, ratio18_1, true);
-motor RollerF = motor(PORT13, ratio18_1, true);
-motor RollerB = motor(PORT15, ratio18_1, false);
+motor MotorB = motor(PORT1, ratio18_1, true); // Back Left
+motor MotorC = motor(PORT5, ratio18_1, true); // Back Right
+motor MotorD = motor(PORT3, ratio18_1, false); // Front Right
+motor IntakeL = motor(PORT15, ratio18_1, false);
+motor IntakeR = motor(/*PORT12*/ PORT16, ratio18_1, true);
+motor RollerF = motor(PORT16, ratio18_1, true);
+motor RollerB = motor(PORT17, ratio18_1, false);
+inertial Gyro = inertial(PORT13);
 
 void preDriver(){
   MotorA.setBrake(brakeType::hold);
@@ -34,6 +51,10 @@ void preDriver(){
   IntakeR.setBrake(brakeType::brake);
   RollerF.setBrake(brakeType::brake);
   RollerB.setBrake(brakeType::brake);
+  Gyro.calibrate();
+  while(Gyro.isCalibrating()){
+    task::sleep(20);
+  }
 }
 
 void pointTurn(float degrees){
@@ -49,13 +70,102 @@ void pointTurn(float degrees){
   }
 }
 
+void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = true, bool reverseForPrecision = true){
+  const float TOLERANCE = 0;
+
+
+  float currentHeading = Gyro.heading();
+
+  Controller.Screen.setCursor(0, 0);
+  Controller.Screen.clearScreen();
+  Controller.Screen.newLine();
+  Controller.Screen.print(currentHeading);
+
+  bool condition = true;
+
+  if(std::abs(targetHeading - currentHeading) < TOLERANCE) return;
+
+  targetHeading = std::fmod(targetHeading, 360);
+
+  if(useBestDirection){
+    if(targetHeading > currentHeading){
+      if(targetHeading - currentHeading > 180){
+        speedPct = -std::abs(speedPct);
+      }else{
+        speedPct = std::abs(speedPct);
+      }
+    }else{
+      if(currentHeading - targetHeading > 180){
+        speedPct = std::abs(speedPct);
+      }else{
+        speedPct = -std::abs(speedPct);
+      }
+    }
+  }
+
+
+  if(targetHeading == 0) targetHeading = speedPct > 0 ? .1f : -.1f;
+
+  MotorA.spin(directionType::fwd, speedPct, velocityUnits::pct);
+  MotorB.spin(directionType::rev, speedPct, velocityUnits::pct);
+  MotorC.spin(directionType::rev, speedPct, velocityUnits::pct);
+  MotorD.spin(directionType::fwd, speedPct, velocityUnits::pct);
+
+  while (condition){
+    currentHeading = Gyro.heading();
+
+    if(speedPct > 0){
+      // turning right
+      if(currentHeading > targetHeading){
+        if(currentHeading - targetHeading > 180){
+          // looping around from 360 to 0
+          condition = true;
+        }else{
+          condition = false;
+        }
+      }else{
+          if(targetHeading - currentHeading > 180){
+          condition = false;
+        }else{
+          condition = true;
+        }
+      }
+    }else{
+      // turning left
+      if(currentHeading < targetHeading){
+        if(targetHeading - currentHeading > 180){
+          // looping around from 360 to 0
+          condition = true;
+        }else{
+          condition = false;
+        }
+      }else{
+        if(currentHeading - targetHeading > 180){
+          condition = false;
+        }else{
+          condition = true;
+        }
+      }
+    }
+  }
+
+  if(reverseForPrecision){
+    turnToAngle(targetHeading, speedPct * -0.3, false, false);
+  }
+
+  MotorA.stop();
+  MotorB.stop();
+  MotorC.stop();
+  MotorD.stop();
+}
+
 int main() {
   preDriver();
 
   float speed = .5;
 
   while(true){
-
+    double gryoReading = Gyro.heading();
     if(Controller.ButtonX.pressing()){
       speed = 1;
     }
@@ -65,6 +175,16 @@ int main() {
     else if(Controller.ButtonB.pressing()){
       speed = .3;
       // speed = 0;
+    }
+
+    if(Controller.ButtonUp.pressing()){
+      turnToAngle(0, MACROS_ORTHOGONAL_SPEED);
+    }else if(Controller.ButtonRight.pressing()){
+      turnToAngle(90, MACROS_ORTHOGONAL_SPEED);
+    }else if(Controller.ButtonDown.pressing()){
+      turnToAngle(180, MACROS_ORTHOGONAL_SPEED);
+    }else if(Controller.ButtonLeft.pressing()){
+      turnToAngle(270, MACROS_ORTHOGONAL_SPEED);
     }
   
     float driveX = Controller.Axis4.position();
@@ -92,10 +212,12 @@ int main() {
       // Controller.Screen.print(driveY);
       // Controller.Screen.newLine();
       // Controller.Screen.print(euclidianDistance);
-      Controller.Screen.print(MotorD.temperature(temperatureUnits::fahrenheit));
       Controller.Screen.newLine();
-      Controller.Screen.print(MotorA.temperature(temperatureUnits::fahrenheit));
-      Controller.Screen.newLine();
+      Controller.Screen.print(gryoReading);
+      // Controller.Screen.print(MotorD.temperature(temperatureUnits::fahrenheit));
+      // Controller.Screen.newLine();
+      // Controller.Screen.print(MotorA.temperature(temperatureUnits::fahrenheit));
+      // Controller.Screen.newLine();
       
     }
     float normalizedX = denominator == 0 ? 0 : (driveX / denominator * 100) * euclidianDistance;
