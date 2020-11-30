@@ -2,11 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdlib.h>
-
 using namespace vex;
-
-// Turn this on to make the robot able to go full speed when going diagonal. However, movement may feel less natural.
-#define NORMALIZE_DIAGONALS false
 
 #define CONTROLLER_DEADZONE 3
 
@@ -165,7 +161,7 @@ int main() {
   float speed = .5;
 
   while(true){
-    double gryoReading = Gyro.heading();
+    double gyroReading = Gyro.heading();
     if(Controller.ButtonX.pressing()){
       speed = 1;
     }
@@ -196,32 +192,15 @@ int main() {
       driveY = 0;
     }
     
-  #if NORMALIZE_DIAGONALS
-    float denominator = std::max(std::abs(driveX), std::abs(driveY));
     float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
+    float stickAngle = driveY == 0 ? 0 : std::fmod((std::atan(driveY / driveX) * 180 / M_PI) + 360, 360);
+    float relativeAngle = std::fmod(stickAngle + gyroReading, 360);
+
     if(euclidianDistance > 1) euclidianDistance = 1;
-  #else
-    float denominator = 100;
-    float euclidianDistance = 1;
-  #endif
-    if(Controller.ButtonDown.pressing()){
-      Controller.Screen.setCursor(0, 0);
-      Controller.Screen.clearScreen();
-      // Controller.Screen.print(driveX);
-      // Controller.Screen.newLine();
-      // Controller.Screen.print(driveY);
-      // Controller.Screen.newLine();
-      // Controller.Screen.print(euclidianDistance);
-      Controller.Screen.newLine();
-      Controller.Screen.print(gryoReading);
-      // Controller.Screen.print(MotorD.temperature(temperatureUnits::fahrenheit));
-      // Controller.Screen.newLine();
-      // Controller.Screen.print(MotorA.temperature(temperatureUnits::fahrenheit));
-      // Controller.Screen.newLine();
-      
-    }
-    float normalizedX = denominator == 0 ? 0 : (driveX / denominator * 100) * euclidianDistance;
-    float normalizedY = denominator == 0 ? 0 : (driveY / denominator * 100) * euclidianDistance;
+
+    float normalizedX = std::cos(relativeAngle * M_PI / 180) * euclidianDistance * 100 * (driveX < 0 ? -1 : 1); // Cos = adjacent (x) / hypotenuse (distance)
+    float normalizedY = std::sin(relativeAngle * M_PI / 180) * euclidianDistance * 100 * (driveX < 0 ? -1 : 1); // Sin = opposite (y) / hypotenuse (distance)
+
     float rot = Controller.Axis1.position(percentUnits::pct);
     if(std::abs(rot) < CONTROLLER_DEADZONE){
       rot = 0;
@@ -231,6 +210,16 @@ int main() {
     MotorC.spin(directionType::fwd, (normalizedX + normalizedY - rot) * speed, velocityUnits::pct);
     MotorD.spin(directionType::fwd, (normalizedX - normalizedY + rot) * speed, velocityUnits::pct);
 
+    if(Controller.ButtonY.pressing()){
+      Controller.Screen.setCursor(0, 0);
+      Controller.Screen.clearScreen();
+      Controller.Screen.print(std::atan(driveY / driveX) * 180 / M_PI);
+      Controller.Screen.newLine();
+      Controller.Screen.print(stickAngle);
+      Controller.Screen.newLine();
+      Controller.Screen.print(rot);
+      Controller.Screen.newLine();
+    }
 
     if(Controller.ButtonR2.pressing()){
       bool reverse = Controller.ButtonL2.pressing();
