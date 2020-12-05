@@ -6,37 +6,32 @@ using namespace vex;
 
 #define CONTROLLER_DEADZONE 3
 
-#define ROLLER_SPEED_FWD 185
-#define ROLLER_SPEED_REV 160
-#define INTAKE_SPEED_FWD 150
-#define INTAKE_SPEED_REV 75
+#define ROLLER_SPEED_FWD 100
+#define ROLLER_SPEED_REV 80
+#define ROLLER_UNSTUCK_SPEED 50
+#define INTAKE_SPEED_FWD 75
+#define INTAKE_SPEED_REV 40
 
 #define MACROS_ORTHOGONAL_SPEED 75
+
+#define INTAKE_PULSE_TIME 150
+#define CYCLE_TIME 20
 
 brain Brain;
 controller Controller;
 
-// REAL BRAIN
-// motor MotorA = motor(PORT11, ratio18_1, false); // Front Left
-// motor MotorB = motor(PORT3, ratio18_1, true); // Back Left
-// motor MotorC = motor(PORT2, ratio18_1, true); // Back Right
-// motor MotorD = motor(PORT1, ratio18_1, false); // Front Right
-// motor IntakeL = motor(PORT14, ratio18_1, false);
-// motor IntakeR = motor(/*PORT12*/ PORT16, ratio18_1, true);
-// motor RollerF = motor(PORT13, ratio18_1, true);
-// motor RollerB = motor(PORT15, ratio18_1, false);
-// inertial Gyro = inertial(PORT12);
+motor MotorA = motor(PORT12, ratio18_1, false); // Front Left
+motor MotorB = motor(PORT7, ratio18_1, true); // Back Left
+motor MotorC = motor(PORT2, ratio18_1, true); // Back Right
+motor MotorD = motor(PORT6, ratio18_1, false); // Front Right
+motor IntakeL = motor(PORT11, ratio18_1, false);
+motor IntakeR = motor(PORT1, ratio18_1, true);
+motor RollerF = motor(PORT13, ratio18_1, true);
+motor RollerB = motor(PORT10, ratio18_1, false);
+inertial Gyro = inertial(PORT9);
 
-// 2ND BRAIN
-motor MotorA = motor(PORT11, ratio18_1, false); // Front Left
-motor MotorB = motor(PORT1, ratio18_1, true); // Back Left
-motor MotorC = motor(PORT5, ratio18_1, true); // Back Right
-motor MotorD = motor(PORT3, ratio18_1, false); // Front Right
-motor IntakeL = motor(PORT15, ratio18_1, false);
-motor IntakeR = motor(/*PORT12*/ PORT16, ratio18_1, true);
-motor RollerF = motor(PORT16, ratio18_1, true);
-motor RollerB = motor(PORT17, ratio18_1, false);
-inertial Gyro = inertial(PORT13);
+
+float intakePulse = 0;
 
 void preDriver(){
   MotorA.setBrake(brakeType::hold);
@@ -66,16 +61,17 @@ void pointTurn(float degrees){
   }
 }
 
+/**
+ * Turns to face a specified heading, relative to the robot's starting position.
+ * @param targetHeading       The angle, in degrees, to face.
+ * @param speedPct            The speed, in percent units, to move at. Positive to turn right, negative to turn left.
+ * @param useBestDirection    If set to true, the sign of speedPct will be disregarded and the shortest path (left or right) will be taken.
+ * @param reverseForPrecision If set to true, robot will turn the opposite direction after turn is finished to compensate for overshooting the target angle.
+ */
 void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = true, bool reverseForPrecision = true){
   const float TOLERANCE = 0;
 
-
   float currentHeading = Gyro.heading();
-
-  Controller.Screen.setCursor(0, 0);
-  Controller.Screen.clearScreen();
-  Controller.Screen.newLine();
-  Controller.Screen.print(currentHeading);
 
   bool condition = true;
 
@@ -120,7 +116,7 @@ void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = t
           condition = false;
         }
       }else{
-          if(targetHeading - currentHeading > 180){
+        if(targetHeading - currentHeading > 180){
           condition = false;
         }else{
           condition = true;
@@ -155,9 +151,15 @@ void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = t
   MotorD.stop();
 }
 
+  
+void onIntakePressed(){
+  intakePulse = INTAKE_PULSE_TIME;
+}
+
 int main() {
   preDriver();
-
+  Controller.ButtonR2.pressed(onIntakePressed);
+  
   float speed = .5;
 
   while(true){
@@ -182,7 +184,7 @@ int main() {
     }else if(Controller.ButtonLeft.pressing()){
       turnToAngle(270, MACROS_ORTHOGONAL_SPEED);
     }
-  
+
     float driveX = Controller.Axis4.position();
     float driveY = Controller.Axis3.position();
     if(std::abs(driveX) < CONTROLLER_DEADZONE){
@@ -191,7 +193,7 @@ int main() {
     if(std::abs(driveY) < CONTROLLER_DEADZONE){
       driveY = 0;
     }
-    
+
     float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
     float stickAngle = driveY == 0 ? 0 : std::fmod((std::atan(driveY / driveX) * 180 / M_PI) + 360, 360);
     float relativeAngle = std::fmod(stickAngle + gyroReading, 360);
@@ -211,38 +213,42 @@ int main() {
     MotorD.spin(directionType::fwd, (normalizedX - normalizedY + rot) * speed, velocityUnits::pct);
 
     if(Controller.ButtonY.pressing()){
-      Controller.Screen.setCursor(0, 0);
-      Controller.Screen.clearScreen();
-      Controller.Screen.print(std::atan(driveY / driveX) * 180 / M_PI);
-      Controller.Screen.newLine();
-      Controller.Screen.print(stickAngle);
-      Controller.Screen.newLine();
-      Controller.Screen.print(rot);
-      Controller.Screen.newLine();
-    }
+      // Controller.Screen.setCursor(0, 0);
+      // Controller.Screen.clearScreen();
+      // Controller.Screen.print(std::atan(driveY / driveX) * 180 / M_PI);
+      // Controller.Screen.newLine();
 
-    if(Controller.ButtonR2.pressing()){
+      // Gyro.setHeading(0, rotationUnits::deg);
+
+      RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
+      RollerB.spin(directionType::fwd, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
+    } else if(Controller.ButtonR2.pressing()){
       bool reverse = Controller.ButtonL2.pressing();
     
-      RollerF.spin(directionType::fwd, reverse ? ROLLER_SPEED_REV : ROLLER_SPEED_FWD, velocityUnits::rpm);
-      RollerB.spin(reverse ? directionType::fwd : directionType::rev, reverse ? ROLLER_SPEED_REV : ROLLER_SPEED_FWD, velocityUnits::rpm);
-    }else{
+      RollerF.spin(directionType::fwd, reverse ? ROLLER_SPEED_REV : ROLLER_SPEED_FWD, velocityUnits::pct);
+      RollerB.spin(reverse ? directionType::fwd : directionType::rev, reverse ? ROLLER_SPEED_REV : ROLLER_SPEED_FWD, velocityUnits::pct);
+    } else {
       RollerF.stop();
       RollerB.stop();
     }
 
-    if(Controller.ButtonR1.pressing()){
-      IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::rpm);
-      IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::rpm);
-    } else if(Controller.ButtonL1.pressing()){
-      IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::rpm);
-      IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::rpm);
+    if(Controller.ButtonR1.pressing() || intakePulse > 0){
+      IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
+      IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
+    }
+    else if(Controller.ButtonL1.pressing()){
+      IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
+      IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
     } else {
       IntakeL.stop();
       IntakeR.stop();
     }
 
-    task::sleep(20);
+    if(intakePulse > 0){
+      intakePulse -= CYCLE_TIME;
+    }
+
+    task::sleep(CYCLE_TIME);
   }
 }
 
