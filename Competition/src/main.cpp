@@ -23,6 +23,8 @@ using namespace vex;
 #define INTAKE_PULSE_TIME 150
 #define CYCLE_TIME 20
 
+#define MOTOR_TIMEOUT_SECS 5
+
 
 competition Competition;
 brain Brain;
@@ -41,6 +43,13 @@ inertial Gyro = inertial(PORT9);
 
 float intakePulse = 0;
 
+enum cardinal {
+  forward,
+  reverse,
+  left,
+  right
+};
+
 void setupRobot(){
   MotorA.setBrake(brakeType::hold);
   MotorB.setBrake(brakeType::hold);
@@ -50,20 +59,64 @@ void setupRobot(){
   IntakeR.setBrake(brakeType::brake);
   RollerF.setBrake(brakeType::brake);
   RollerB.setBrake(brakeType::brake);
+
+  MotorA.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+  MotorB.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+  MotorC.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+  MotorD.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+  IntakeL.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+  IntakeR.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+  RollerF.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+  RollerB.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
   Gyro.calibrate();
   while(Gyro.isCalibrating()){
     wait(20, msec);
   }
+  // Controller.Screen.setCursor(0, 0);
+  // Controller.Screen.clearScreen();
+  // Controller.Screen.print("CALIBRATED!");
+  // Controller.Screen.newLine();
 }
 
-void pre_auton(void) {
-  vexcodeInit();
-  setupRobot();
-}
+void moveCardinal(cardinal direction, float inches, float speed = 35, float timeout = 10000){
+  float inchToRev = 1.0 / 11; // Theoretically this should be the circumference of the wheel, but x drive has lots of slipping 
 
-
-void autonomous(void) {
-  
+  switch(direction){
+    case cardinal::forward: {
+      MotorA.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorB.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorC.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorD.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      break;
+    }
+    case cardinal::reverse: {
+      MotorA.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorB.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorC.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorD.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      break;
+    }
+    case cardinal::left: {
+      MotorA.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorB.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorC.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorD.rotateFor(-inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      break;
+    }
+    case cardinal::right: {
+      MotorA.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorB.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorC.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      MotorD.rotateFor(inches * inchToRev, rotationUnits::rev, speed, velocityUnits::pct, false);
+      break;
+    }
+  }
+  float t = 0;
+  while(MotorA.isSpinning() || MotorB.isSpinning() || MotorC.isSpinning() || MotorD.isSpinning()){
+    task::sleep(20);
+    t += 20;
+    if(t > timeout) break;
+  }
 }
 
 void pointTurn(float degrees){
@@ -169,6 +222,35 @@ void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = t
   MotorD.stop();
 }
 
+void spinIntakes(directionType direction){
+  if(direction == directionType::fwd){
+    IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
+    IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
+  }else if(direction == directionType::rev){
+    IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
+    IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
+  }
+}
+
+void stopIntakes(){
+  IntakeL.stop();
+  IntakeR.stop();
+}
+
+void spinRollers(directionType direction, float speed = 0){
+  if(direction == directionType::fwd){
+    RollerF.spin(directionType::fwd, speed == 0 ? ROLLER_SPEED_FWD : speed, velocityUnits::pct);
+    RollerB.spin(directionType::rev, speed == 0 ? ROLLER_SPEED_FWD : speed, velocityUnits::pct);
+  }else if(direction == directionType::rev){
+    RollerF.spin(directionType::fwd, speed == 0 ? ROLLER_SPEED_REV : speed, velocityUnits::pct);
+    RollerB.spin(directionType::fwd, speed == 0 ? ROLLER_SPEED_REV : speed, velocityUnits::pct);
+  }
+}
+
+void stopRollers(){
+  RollerF.stop();
+  RollerB.stop();
+}
   
 void onIntakePressed(){
   intakePulse = INTAKE_PULSE_TIME;
@@ -182,7 +264,9 @@ void onIntakePressed(){
   }
 
 void usercontrol(void) {
-  preDriver();
+  while(Gyro.isCalibrating()){
+    wait(20, msec);
+  }
   Controller.ButtonR2.pressed(onIntakePressed);
   
   float speed = .5;
@@ -278,8 +362,92 @@ void usercontrol(void) {
 }
 
 
+void pre_auton(void) {
+  vexcodeInit();
+  setupRobot();
+}
+
+
+void matchAutonomous(void){
+  while(Gyro.isCalibrating()){
+    wait(20, msec);
+  }
+}
+
+void skillsAutonomous(void) {
+  while(Gyro.isCalibrating()){
+    wait(20, msec);
+  }
+  // AT START:
+  // The robot should be aligned so it is centered with the ball on the field towards the left.
+  // The preload should be pushed up so it's touching the two back rollers and the bottom front roller.
+
+  // Move from wall to tower and rotate
+  spinIntakes(fwd);
+  moveCardinal(cardinal::forward, 12);
+  task::sleep(300);
+  stopIntakes();
+  turnToAngle(270, 75);
+  moveCardinal(cardinal::forward, 16);
+  turnToAngle(180 + 45, 50);
+  spinIntakes(fwd);
+  moveCardinal(cardinal::forward, 8);
+  // robot is on Red Left Tower
+  spinRollers(fwd);
+  spinIntakes(fwd);
+  task::sleep(650);
+  stopRollers();
+  stopIntakes();
+  RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
+  task::sleep(500);
+  stopRollers();
+  spinIntakes(fwd);
+  moveCardinal(cardinal::reverse, 10);
+  spinIntakes(directionType::rev);
+  moveCardinal(cardinal::reverse, 7);
+  turnToAngle(180, 75);
+  // Move the red ball up, and release a blue ball
+  // spinRollers(directionType::fwd);
+  // task::sleep(400);
+  // spinRollers(directionType::rev);
+  // task::sleep(600);
+  stopRollers();
+  moveCardinal(cardinal::left, 42);
+  // robot is on Red Center Tower
+  moveCardinal(cardinal::forward, 12.5, 35, 1000);
+  spinRollers(fwd);
+  spinIntakes(fwd);
+  task::sleep(1200);
+  stopRollers();
+  moveCardinal(cardinal::reverse, 10);
+  // Now off the center tower
+  turnToAngle(90, 75);
+  spinRollers(directionType::rev);
+  task::sleep(1000);
+  spinIntakes(directionType::rev);
+  moveCardinal(cardinal::forward, 28);
+  spinIntakes(directionType::fwd);
+  stopRollers();
+  // at this point the robot is picking up a field ball
+  moveCardinal(cardinal::forward, 18);
+  stopIntakes();
+  stopRollers();
+  turnToAngle(90 + 45, 47);
+  spinIntakes(fwd);
+  moveCardinal(cardinal::forward, 22.5, 35, 2000);
+  // robot is on Red Right Tower
+  spinRollers(fwd);
+  task::sleep(1100);
+  stopRollers();
+  moveCardinal(cardinal::reverse, 15);
+}
+
 int main() {
-  Competition.autonomous(autonomous);
+  if(SKILLS){
+    Competition.autonomous(skillsAutonomous);
+  }else{
+    Competition.autonomous(matchAutonomous);
+  }
   Competition.drivercontrol(usercontrol);
 
   pre_auton();
