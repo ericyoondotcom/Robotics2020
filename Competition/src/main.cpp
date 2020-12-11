@@ -413,15 +413,15 @@ void skillsAutonomous(void) {
   // task::sleep(600);
   stopRollers();
   moveCardinal(cardinal::left, 42);
+  moveCardinal(cardinal::forward, 12, 35, 1000);
   // robot is on Red Center Tower
-  moveCardinal(cardinal::forward, 12.5, 35, 1000);
   spinRollers(fwd);
   spinIntakes(fwd);
   task::sleep(1200);
   stopRollers();
   moveCardinal(cardinal::reverse, 10);
   // Now off the center tower
-  turnToAngle(90, 75);
+  turnToAngle(90, 50);
   spinRollers(directionType::rev);
   task::sleep(1000);
   spinIntakes(directionType::rev);
@@ -429,17 +429,26 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::fwd);
   stopRollers();
   // at this point the robot is picking up a field ball
-  moveCardinal(cardinal::forward, 18);
+  moveCardinal(cardinal::forward, 19);
   stopIntakes();
   stopRollers();
   turnToAngle(90 + 45, 47);
   spinIntakes(fwd);
-  moveCardinal(cardinal::forward, 22.5, 35, 2000);
+  
+  // spin rollers a bit just to get red one so its not blocking blues
+  spinRollers(fwd);
+  spinIntakes(fwd);
+  task::sleep(600);
+  stopIntakes();
+  stopRollers();
+
+  moveCardinal(cardinal::forward, 22, 35, 2000);
   // robot is on Red Right Tower
   spinRollers(fwd);
   task::sleep(1100);
   stopRollers();
   moveCardinal(cardinal::reverse, 15);
+  stopIntakes();
 }
 
 int main() {
