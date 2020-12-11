@@ -521,7 +521,7 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::fwd);
   stopRollers();
   // at this point the robot is picking up a field ball
-  moveCardinal(cardinal::forward, 19);
+  moveCardinal(cardinal::forward, 18);
   stopIntakes();
   stopRollers();
   turnToAngle(90 + 45, 47);
@@ -541,6 +541,18 @@ void skillsAutonomous(void) {
   stopRollers();
   moveCardinal(cardinal::reverse, 15);
   stopIntakes();
+
+  turnToAngle(270 + 45, 75);
+  moveCardinal(cardinal::forward, 34);
+  turnToAngle(0, 50);
+  moveCardinal(cardinal::left, 17.5);
+
+  for(int i = 0; i < 3; i++){
+    // moveCardinal(cardinal::forward, 6);
+    // moveCardinal(cardinal::reverse, 6);
+    moveCardinal(cardinal::forward, 7, 40, 1000);
+    moveCardinal(cardinal::reverse, 7, 40, 1000);
+  }
 }
 
 int main() {
