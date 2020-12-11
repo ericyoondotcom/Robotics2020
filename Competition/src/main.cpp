@@ -25,6 +25,8 @@ using namespace vex;
 
 #define MOTOR_TIMEOUT_SECS 5
 
+#define BUTTON_COOLDOWN_MILLIS 400
+
 
 competition Competition;
 brain Brain;
@@ -40,8 +42,24 @@ motor RollerF = motor(PORT13, ratio18_1, true);
 motor RollerB = motor(PORT10, ratio18_1, false);
 inertial Gyro = inertial(PORT9);
 
+bool enableRelativeDriving = true;
 
 float intakePulse = 0;
+
+// Cooldowns:
+// Is in the range [BUTTON_COOLDOWN_MILLIS, -1]
+// -1 is idle; nothing will happen
+// 0 is when it triggers. When a button is pressed it gets reset to BUTTON_COOLDOWN_MILLIS
+
+float directionalButtonCooldown = -1;
+float bButtonCooldown = -1;
+
+bool upBtnFlag = false;
+bool rightBtnFlag = false;
+bool downBtnFlag = false;
+bool leftBtnFlag = false;
+bool bBtnFlag = false;
+bool yBtnFlag = false;
 
 enum cardinal {
   forward,
@@ -280,18 +298,8 @@ void usercontrol(void) {
       speed = .5;
     }
     else if(Controller.ButtonB.pressing()){
-      speed = .3;
-      // speed = 0;
-    }
-
-    if(Controller.ButtonUp.pressing()){
-      turnToAngle(0, MACROS_ORTHOGONAL_SPEED);
-    }else if(Controller.ButtonRight.pressing()){
-      turnToAngle(90, MACROS_ORTHOGONAL_SPEED);
-    }else if(Controller.ButtonDown.pressing()){
-      turnToAngle(180, MACROS_ORTHOGONAL_SPEED);
-    }else if(Controller.ButtonLeft.pressing()){
-      turnToAngle(270, MACROS_ORTHOGONAL_SPEED);
+      // speed = .3;
+      // We don't need lowest speed in Change Up, so use for emergency actions instead
     }
 
     float driveX = Controller.Axis4.position();
@@ -305,7 +313,7 @@ void usercontrol(void) {
 
     float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
     float stickAngle = driveY == 0 ? 0 : std::fmod((std::atan(driveY / driveX) * 180 / M_PI) + 360, 360);
-    float relativeAngle = std::fmod(stickAngle + gyroReading, 360);
+    float relativeAngle = enableRelativeDriving ? std::fmod(stickAngle + gyroReading, 360) : stickAngle;
 
     if(euclidianDistance > 1) euclidianDistance = 1;
 
@@ -355,6 +363,90 @@ void usercontrol(void) {
 
     if(intakePulse > 0){
       intakePulse -= CYCLE_TIME;
+    }
+
+
+    // Delayed trigger buttons code
+
+    if(Controller.ButtonUp.pressing()){
+      upBtnFlag = true;
+      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    }
+    if(Controller.ButtonRight.pressing()){
+      rightBtnFlag = true;
+      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    }
+    if(Controller.ButtonDown.pressing()){
+      downBtnFlag = true;
+      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    }
+    if(Controller.ButtonLeft.pressing()){
+      leftBtnFlag = true;
+      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    }
+    if(Controller.ButtonY.pressing()){
+      yBtnFlag = true;
+    }
+    if(Controller.ButtonB.pressing()){
+      bBtnFlag = true;
+      if(bButtonCooldown < 0) bButtonCooldown = 0;
+    }
+
+    if(directionalButtonCooldown < 0) {}
+    else if(directionalButtonCooldown > BUTTON_COOLDOWN_MILLIS){
+      if(upBtnFlag){
+        if(leftBtnFlag){
+          turnToAngle(270 + 45, MACROS_ORTHOGONAL_SPEED);
+        }else if(rightBtnFlag){
+          turnToAngle(45, MACROS_ORTHOGONAL_SPEED);
+        }else{
+          turnToAngle(0, MACROS_ORTHOGONAL_SPEED);
+        }
+      }else if(downBtnFlag){
+        if(leftBtnFlag){
+          turnToAngle(180 + 45, MACROS_ORTHOGONAL_SPEED);
+        }else if(rightBtnFlag){
+          turnToAngle(90 + 45, MACROS_ORTHOGONAL_SPEED);
+        }else{
+          turnToAngle(180, MACROS_ORTHOGONAL_SPEED);
+        }
+      }else if(leftBtnFlag){
+        turnToAngle(270, MACROS_ORTHOGONAL_SPEED);
+      }else if(rightBtnFlag){
+        turnToAngle(90, MACROS_ORTHOGONAL_SPEED);
+      }
+      Controller.rumble(".");
+      leftBtnFlag = false;
+      rightBtnFlag = false;
+      upBtnFlag = false;
+      downBtnFlag = false;
+      directionalButtonCooldown = -1;
+    }else{
+      directionalButtonCooldown += CYCLE_TIME;
+    }
+
+    if(bButtonCooldown < 0) {}
+    else if(bButtonCooldown > BUTTON_COOLDOWN_MILLIS){
+      if(bBtnFlag){
+        if(yBtnFlag){
+          if(enableRelativeDriving){
+            enableRelativeDriving = false;
+            Controller.rumble("--");
+          }else{
+            enableRelativeDriving = true;
+            Controller.rumble("..");
+          }
+        }else{
+          Gyro.resetHeading();
+          Controller.rumble("-");
+        }
+      }
+
+      bBtnFlag = false;
+      yBtnFlag = false;
+      bButtonCooldown = -1;
+    }else{
+      bButtonCooldown += CYCLE_TIME;
     }
 
     task::sleep(CYCLE_TIME);
