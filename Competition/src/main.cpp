@@ -16,7 +16,8 @@ using namespace vex;
 #define ROLLER_SPEED_REV 80
 #define ROLLER_UNSTUCK_SPEED 50
 #define INTAKE_SPEED_FWD 75
-#define INTAKE_SPEED_REV 40
+#define INTAKE_SPEED_REV 70
+#define INTAKE_OPEN_POS 100
 
 #define MACROS_ORTHOGONAL_SPEED 75
 
@@ -285,9 +286,12 @@ void usercontrol(void) {
   while(Gyro.isCalibrating()){
     wait(20, msec);
   }
+  IntakeL.resetRotation();
+  IntakeR.resetRotation();
   Controller.ButtonR2.pressed(onIntakePressed);
   
-  float speed = .5;
+  float speed = 1;
+  bool holdingIntakes = false;
 
   while(true){
     double gyroReading = Gyro.heading();
@@ -329,14 +333,15 @@ void usercontrol(void) {
     MotorC.spin(directionType::fwd, (normalizedX + normalizedY - rot) * speed, velocityUnits::pct);
     MotorD.spin(directionType::fwd, (normalizedX - normalizedY + rot) * speed, velocityUnits::pct);
 
+    // Controller.Screen.setCursor(0, 0);
+    // Controller.Screen.clearScreen();
+    // Controller.Screen.print((normalizedX + normalizedY + rot) * speed);
+    // Controller.Screen.print((normalizedX - normalizedY - rot) * speed);
+    // Controller.Screen.print((normalizedX + normalizedY - rot) * speed);
+    // Controller.Screen.print((normalizedX - normalizedY + rot) * speed);
+    // Controller.Screen.newLine();
+
     if(Controller.ButtonY.pressing()){
-      // Controller.Screen.setCursor(0, 0);
-      // Controller.Screen.clearScreen();
-      // Controller.Screen.print(std::atan(driveY / driveX) * 180 / M_PI);
-      // Controller.Screen.newLine();
-
-      // Gyro.setHeading(0, rotationUnits::deg);
-
       RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
       RollerB.spin(directionType::fwd, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
     } else if(Controller.ButtonR2.pressing()){
@@ -350,15 +355,27 @@ void usercontrol(void) {
     }
 
     if(Controller.ButtonR1.pressing() || intakePulse > 0){
+      IntakeL.setBrake(brakeType::coast);
+      IntakeR.setBrake(brakeType::coast);
+      holdingIntakes = false;
       IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
       IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
+      // IntakeL.resetPosition();
+      // IntakeR.resetPosition();
     }
-    else if(Controller.ButtonL1.pressing()){
-      IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
-      IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
+    else if(Controller.ButtonL1.pressing() && !holdingIntakes){
+      // IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
+      // IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
+      holdingIntakes = true;
+      IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+      IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+      IntakeL.setBrake(brakeType::hold);
+      IntakeR.setBrake(brakeType::hold);
     } else {
-      IntakeL.stop();
-      IntakeR.stop();
+      if(IntakeL.isDone() && IntakeR.isDone()){
+        IntakeL.stop();
+        IntakeR.stop();
+      }
     }
 
     if(intakePulse > 0){
