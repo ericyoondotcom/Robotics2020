@@ -524,23 +524,23 @@ void skillsAutonomous(void) {
   task::sleep(250);
   stopRollers();
   moveCardinal(cardinal::left, 42);
-  moveCardinal(cardinal::forward, 12, 35, 1000);
+  moveCardinal(cardinal::forward, 13, 35, 1000); // Intentionally go too far— it's to square up the robot
   // robot is on Red Center Tower
   spinRollers(fwd);
   spinIntakes(fwd);
   task::sleep(1200);
   stopRollers();
-  moveCardinal(cardinal::reverse, 10);
+  moveCardinal(cardinal::reverse, 5);
   // Now off the center tower
   turnToAngle(90, 50);
   spinRollers(directionType::rev);
   task::sleep(1000);
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::forward, 28);
+  moveCardinal(cardinal::forward, 30);
   spinIntakes(directionType::fwd);
   stopRollers();
   // at this point the robot is picking up a field ball
-  moveCardinal(cardinal::forward, 15);
+  moveCardinal(cardinal::forward, 19);
   stopIntakes();
   stopRollers();
   turnToAngle(90 + 45, 47);
@@ -550,22 +550,22 @@ void skillsAutonomous(void) {
   spinRollers(fwd);
   spinIntakes(fwd);
   task::sleep(600);
-  stopIntakes();
   stopRollers();
-  spinIntakes(directionType::rev);
   moveCardinal(cardinal::forward, 22, 35, 2000);
   // robot is on Red Right Tower
   spinRollers(fwd);
-  task::sleep(1100);
+  task::sleep(900);
   stopRollers();
   moveCardinal(cardinal::reverse, 15);
-  spinIntakes(fwd);
+  spinRollers(directionType::rev);
   turnToAngle(270 + 45, 75);
   stopIntakes();
   moveCardinal(cardinal::forward, 34);
   turnToAngle(0, 50);
-  moveCardinal(cardinal::left, 17.5);
-
+  // Moving left towards true mid tower
+  moveCardinal(cardinal::left, 17);
+  stopRollers();
+  moveCardinal(cardinal::forward, 8, 40, 1000);
   for(int i = 0; i < 3; i++){
     // moveCardinal(cardinal::forward, 6);
     // moveCardinal(cardinal::reverse, 6);
