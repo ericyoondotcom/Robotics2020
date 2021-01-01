@@ -488,38 +488,43 @@ void liveRemoteAutonomous(void){
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
-  // Setup for Live Remote is slightly different than for Skills. Instead of being in the center of the tile,
-  // the robot should start on the wall, with the left chassis beam lined up with the left edge (INCLUDING connector tabs)
-  // of the 2nd tile from the left field bounds. 
+  // Same setup as for skills
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::forward, 14.5, 50);
-  moveCardinal(cardinal::left, 9, 50);
-  turnToAngle(180 + 45, 75);
-  spinIntakes(fwd);
+  moveCardinal(cardinal::forward, 16, 65);
+  moveCardinal(cardinal::left, 13, 65);
+  turnToAngle(180 + 45, 80);
+  IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
+  IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
   moveCardinal(cardinal::forward, 14, 35, 1000);
   // Robot is on left tower
-  stopIntakes();
+  // IntakeL.spin(directionType::fwd, 40, velocityUnits::pct);
+  // IntakeR.spin(directionType::fwd, 40, velocityUnits::pct);
   spinRollers(fwd);
   vex::this_thread::sleep_for(700);
+  stopIntakes();
   stopRollers();
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::reverse, 15, 50);
-  turnToAngle(180, 75);
+  moveCardinal(cardinal::reverse, 15, 75);
+  turnToAngle(180, 80);
+  spinRollers(directionType::rev);
+  vex::this_thread::sleep_for(175);
+  stopRollers();
+  moveCardinal(cardinal::reverse, 3, 75);
   // Move left towards center tower
   moveCardinal(cardinal::left, 44, 50);
-  moveCardinal(cardinal::forward, 11, 50, 700);
   spinRollers(fwd);
-  vex::this_thread::sleep_for(1200);
+  moveCardinal(cardinal::forward, 11, 50, 700);
+  vex::this_thread::sleep_for(500);
   stopRollers();
   moveCardinal(cardinal::reverse, 7, 50);
-  moveCardinal(cardinal::left, 46, 50);
+  moveCardinal(cardinal::left, 42, 50);
   // Start facing right tower
   turnToAngle(90 + 45, 75);
   spinIntakes(fwd);
   spinRollers(directionType::fwd);
-  moveCardinal(cardinal::forward, 14, 90, 1600);
-  vex::this_thread::sleep_for(1000);
+  moveCardinal(cardinal::forward, 30, 90, 1000);
   spinIntakes(directionType::rev);
+  vex::this_thread::sleep_for(1500);
   moveCardinal(cardinal::reverse, 10);
   stopIntakes();
   stopRollers();
