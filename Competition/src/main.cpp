@@ -5,7 +5,8 @@
 using namespace vex;
 
 // ************
-#define SKILLS true
+#define SKILLS false
+#define LIVE_REMOTE true
 #define RED_TEAM true
 #define RIGHT_SIDE_AUTON true
 // ************
@@ -89,7 +90,7 @@ void setupRobot(){
   RollerB.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
   Gyro.calibrate();
   while(Gyro.isCalibrating()){
-    wait(20, msec);
+    vex::this_thread::sleep_for(20);
   }
   // Controller.Screen.setCursor(0, 0);
   // Controller.Screen.clearScreen();
@@ -132,7 +133,7 @@ void moveCardinal(cardinal direction, float inches, float speed = 35, float time
   }
   float t = 0;
   while(MotorA.isSpinning() || MotorB.isSpinning() || MotorC.isSpinning() || MotorD.isSpinning()){
-    task::sleep(20);
+    vex::this_thread::sleep_for(20);
     t += 20;
     if(t > timeout) break;
   }
@@ -147,7 +148,7 @@ void pointTurn(float degrees){
   MotorC.rotateFor(-degrees * degreesConversion, rotationUnits::deg, speed, velocityUnits::pct, false);
   MotorD.rotateFor(degrees * degreesConversion, rotationUnits::deg, speed, velocityUnits::pct, false);
   while(MotorA.isSpinning() || MotorB.isSpinning() || MotorC.isSpinning() || MotorD.isSpinning()){
-    task::sleep(20);
+    vex::this_thread::sleep_for(20);
   }
 }
 
@@ -195,7 +196,6 @@ void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = t
 
   while (condition){
     currentHeading = Gyro.heading();
-
     if(speedPct > 0){
       // turning right
       if(currentHeading > targetHeading){
@@ -229,6 +229,7 @@ void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = t
         }
       }
     }
+    vex::this_thread::sleep_for(20);
   }
 
   if(reverseForPrecision){
@@ -284,7 +285,7 @@ void onIntakePressed(){
 
 void usercontrol(void) {
   while(Gyro.isCalibrating()){
-    wait(20, msec);
+    vex::this_thread::sleep_for(20);
   }
   IntakeL.resetRotation();
   IntakeR.resetRotation();
@@ -402,7 +403,7 @@ void usercontrol(void) {
       if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
     }
     if(Controller.ButtonY.pressing()){
-      yBtnFlag = true;
+      if(bButtonCooldown >= 0) yBtnFlag = true;
     }
     if(Controller.ButtonB.pressing()){
       bBtnFlag = true;
@@ -466,7 +467,7 @@ void usercontrol(void) {
       bButtonCooldown += CYCLE_TIME;
     }
 
-    task::sleep(CYCLE_TIME);
+    vex::this_thread::sleep_for(CYCLE_TIME);
   }
 }
 
@@ -479,22 +480,52 @@ void pre_auton(void) {
 
 void matchAutonomous(void){
   while(Gyro.isCalibrating()){
-    wait(20, msec);
+    vex::this_thread::sleep_for(20);
   }
+}
+
+void liveRemoteAutonomous(void){
+  while(Gyro.isCalibrating()){
+    vex::this_thread::sleep_for(20);
+  }
+  // Setup for Live Remote is slightly different than for Skills. Instead of being in the center of the tile,
+  // the robot should start on the wall, with the left chassis beam lined up with the left edge (INCLUDING connector tabs)
+  // of the 2nd tile from the left field bounds. 
+  spinIntakes(directionType::rev);
+  moveCardinal(cardinal::forward, 14.5);
+  moveCardinal(cardinal::left, 9);
+  turnToAngle(180 + 45, 75);
+  spinIntakes(fwd);
+  moveCardinal(cardinal::forward, 14, 35, 1600);
+  // Robot is on left tower
+  stopIntakes();
+  spinRollers(fwd);
+  vex::this_thread::sleep_for(700);
+  stopRollers();
+  spinIntakes(directionType::rev);
+  moveCardinal(cardinal::reverse, 15);
+  turnToAngle(180, 75);
+  // Move left towards center tower
+  moveCardinal(cardinal::left, 44, 50);
+  moveCardinal(cardinal::forward, 13, 35, 1000);
+  spinRollers(fwd);
+  vex::this_thread::sleep_for(1200);
+  stopRollers();
+  moveCardinal(cardinal::reverse, 12, 40);
 }
 
 void skillsAutonomous(void) {
   while(Gyro.isCalibrating()){
-    wait(20, msec);
+    vex::this_thread::sleep_for(20);
   }
   // AT START:
   // The robot should be aligned so it is centered with the ball on the field towards the left.
-  // The preload should be pushed up so it's touching the two back rollers and the bottom front roller.
+  // The preload should be pushed up so it's touching the top back roller and the tiny front roller.
 
   // Move from wall to tower and rotate
   spinIntakes(fwd);
   moveCardinal(cardinal::forward, 12);
-  task::sleep(300);
+  vex::this_thread::sleep_for(300);
   stopIntakes();
   turnToAngle(270, 75);
   moveCardinal(cardinal::forward, 16);
@@ -504,11 +535,11 @@ void skillsAutonomous(void) {
   // robot is on Red Left Tower
   spinRollers(fwd);
   spinIntakes(fwd);
-  task::sleep(700);
+  vex::this_thread::sleep_for(700);
   stopRollers();
   stopIntakes();
   RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
-  task::sleep(500);
+  vex::this_thread::sleep_for(500);
   stopRollers();
   spinIntakes(fwd);
   moveCardinal(cardinal::reverse, 10);
@@ -517,24 +548,24 @@ void skillsAutonomous(void) {
   turnToAngle(180, 75);
   // Move the red ball up, and release a blue ball
   // spinRollers(directionType::fwd);
-  // task::sleep(400);
+  // vex::this_thread::sleep_for(400);
   // spinRollers(directionType::rev);
-  // task::sleep(600);
+  // vex::this_thread::sleep_for(600);
   RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
-  task::sleep(250);
+  vex::this_thread::sleep_for(250);
   stopRollers();
   moveCardinal(cardinal::left, 42);
   moveCardinal(cardinal::forward, 13, 35, 1000); // Intentionally go too far— it's to square up the robot
   // robot is on Red Center Tower
   spinRollers(fwd);
   spinIntakes(fwd);
-  task::sleep(1200);
+  vex::this_thread::sleep_for(1200);
   stopRollers();
   moveCardinal(cardinal::reverse, 5);
   // Now off the center tower
   turnToAngle(90, 50);
   spinRollers(directionType::rev);
-  task::sleep(1000);
+  vex::this_thread::sleep_for(1000);
   spinIntakes(directionType::rev);
   moveCardinal(cardinal::forward, 30);
   spinIntakes(directionType::fwd);
@@ -549,12 +580,12 @@ void skillsAutonomous(void) {
   // spin rollers a bit just to get red one so its not blocking blues
   spinRollers(fwd);
   spinIntakes(fwd);
-  task::sleep(600);
+  vex::this_thread::sleep_for(600);
   stopRollers();
   moveCardinal(cardinal::forward, 22, 35, 2000);
   // robot is on Red Right Tower
   spinRollers(fwd);
-  task::sleep(900);
+  vex::this_thread::sleep_for(900);
   stopRollers();
   moveCardinal(cardinal::reverse, 15);
   spinRollers(directionType::rev);
@@ -577,6 +608,8 @@ void skillsAutonomous(void) {
 int main() {
   if(SKILLS){
     Competition.autonomous(skillsAutonomous);
+  }else if(LIVE_REMOTE){
+    Competition.autonomous(liveRemoteAutonomous);
   }else{
     Competition.autonomous(matchAutonomous);
   }
@@ -585,6 +618,6 @@ int main() {
   pre_auton();
 
   while (true) {
-    wait(100, msec);
+    vex::this_thread::sleep_for(100);
   }
 }
