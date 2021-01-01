@@ -492,26 +492,37 @@ void liveRemoteAutonomous(void){
   // the robot should start on the wall, with the left chassis beam lined up with the left edge (INCLUDING connector tabs)
   // of the 2nd tile from the left field bounds. 
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::forward, 14.5);
-  moveCardinal(cardinal::left, 9);
+  moveCardinal(cardinal::forward, 14.5, 50);
+  moveCardinal(cardinal::left, 9, 50);
   turnToAngle(180 + 45, 75);
   spinIntakes(fwd);
-  moveCardinal(cardinal::forward, 14, 35, 1600);
+  moveCardinal(cardinal::forward, 14, 35, 1000);
   // Robot is on left tower
   stopIntakes();
   spinRollers(fwd);
   vex::this_thread::sleep_for(700);
   stopRollers();
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::reverse, 15);
+  moveCardinal(cardinal::reverse, 15, 50);
   turnToAngle(180, 75);
   // Move left towards center tower
   moveCardinal(cardinal::left, 44, 50);
-  moveCardinal(cardinal::forward, 13, 35, 1000);
+  moveCardinal(cardinal::forward, 11, 50, 700);
   spinRollers(fwd);
   vex::this_thread::sleep_for(1200);
   stopRollers();
-  moveCardinal(cardinal::reverse, 12, 40);
+  moveCardinal(cardinal::reverse, 7, 50);
+  moveCardinal(cardinal::left, 46, 50);
+  // Start facing right tower
+  turnToAngle(90 + 45, 75);
+  spinIntakes(fwd);
+  spinRollers(directionType::fwd);
+  moveCardinal(cardinal::forward, 14, 90, 1600);
+  vex::this_thread::sleep_for(1000);
+  spinIntakes(directionType::rev);
+  moveCardinal(cardinal::reverse, 10);
+  stopIntakes();
+  stopRollers();
 }
 
 void skillsAutonomous(void) {
