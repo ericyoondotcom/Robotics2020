@@ -5,7 +5,7 @@
 using namespace vex;
 
 // ************
-#define SKILLS false
+#define SKILLS true
 #define LIVE_REMOTE true
 #define RED_TEAM true
 #define RIGHT_SIDE_AUTON true
@@ -547,7 +547,7 @@ void skillsAutonomous(void) {
   moveCardinal(cardinal::forward, 16);
   turnToAngle(180 + 45, 50);
   spinIntakes(fwd);
-  moveCardinal(cardinal::forward, 8);
+  moveCardinal(cardinal::forward, 8, 1000);
   // robot is on Red Left Tower
   spinRollers(fwd);
   spinIntakes(fwd);
