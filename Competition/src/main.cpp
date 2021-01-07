@@ -294,6 +294,14 @@ void usercontrol(void) {
   float speed = 1;
   bool holdingIntakes = false;
 
+  // while(true){
+  //   if(Controller.ButtonA.pressing()){
+  //     moveCardinal(cardinal::forward, 12 * 6);
+  //   }else if(Controller.ButtonB.pressing()){
+  //     moveCardinal(cardinal::reverse, 12 * 6);
+  //   }
+  // }
+
   while(true){
     double gyroReading = Gyro.heading();
     if(Controller.ButtonX.pressing()){
@@ -488,11 +496,13 @@ void liveRemoteAutonomous(void){
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
+  const float DEGREE_CORRECTION = 3;
+
   // Same setup as for skills
   spinIntakes(directionType::rev);
   moveCardinal(cardinal::forward, 16, 65);
   moveCardinal(cardinal::left, 13, 65);
-  turnToAngle(180 + 45, 80);
+  turnToAngle(180 + 45 + DEGREE_CORRECTION, 80, true, false);
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
   moveCardinal(cardinal::forward, 14, 35, 1000);
@@ -505,7 +515,7 @@ void liveRemoteAutonomous(void){
   stopRollers();
   spinIntakes(directionType::rev);
   moveCardinal(cardinal::reverse, 15, 75);
-  turnToAngle(180, 80);
+  turnToAngle(180 + DEGREE_CORRECTION, 80, true, false);
   spinRollers(directionType::rev);
   vex::this_thread::sleep_for(175);
   stopRollers();
@@ -519,7 +529,7 @@ void liveRemoteAutonomous(void){
   moveCardinal(cardinal::reverse, 7, 50);
   moveCardinal(cardinal::left, 42, 50);
   // Start facing right tower
-  turnToAngle(90 + 45, 75);
+  turnToAngle(90 + 45 + DEGREE_CORRECTION, 75, true, false);
   spinIntakes(fwd);
   spinRollers(directionType::fwd);
   moveCardinal(cardinal::forward, 30, 90, 1000);
@@ -590,7 +600,7 @@ void skillsAutonomous(void) {
   moveCardinal(cardinal::forward, 19);
   stopIntakes();
   stopRollers();
-  turnToAngle(90 + 45, 47);
+  turnToAngle(90 + 45 + 5, 47); // Drift correction
   spinIntakes(fwd);
   
   // spin rollers a bit just to get red one so its not blocking blues
@@ -605,18 +615,18 @@ void skillsAutonomous(void) {
   stopRollers();
   moveCardinal(cardinal::reverse, 15);
   spinRollers(directionType::rev);
-  turnToAngle(270 + 45, 75);
+  turnToAngle(270 + 45 + 5, 75);
   stopIntakes();
   moveCardinal(cardinal::forward, 34);
   turnToAngle(0, 50);
   // Moving left towards true mid tower
   moveCardinal(cardinal::left, 17);
   stopRollers();
-  moveCardinal(cardinal::forward, 8, 40, 1000);
+  moveCardinal(cardinal::forward, 11, 60, 1200);
   for(int i = 0; i < 3; i++){
     // moveCardinal(cardinal::forward, 6);
     // moveCardinal(cardinal::reverse, 6);
-    moveCardinal(cardinal::forward, 7, 40, 1000);
+    moveCardinal(cardinal::forward, 9, 40, 1000);
     moveCardinal(cardinal::reverse, 7, 40, 1000);
   }
 }
