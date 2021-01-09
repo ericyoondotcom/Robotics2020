@@ -43,6 +43,9 @@ motor IntakeR = motor(PORT1, ratio18_1, true);
 motor RollerF = motor(PORT13, ratio18_1, true);
 motor RollerB = motor(PORT10, ratio18_1, false);
 inertial Gyro = inertial(PORT9);
+encoder EncoderR = encoder(Brain.ThreeWirePort.C);
+encoder EncoderL = encoder(Brain.ThreeWirePort.G);
+encoder EncoderB = encoder(Brain.ThreeWirePort.E);
 
 bool enableRelativeDriving = true;
 
@@ -303,6 +306,24 @@ void usercontrol(void) {
   // }
 
   while(true){
+
+    // if(Controller.ButtonY.pressing()){
+    //   Controller.Screen.setCursor(0, 0);
+    //   Controller.Screen.clearScreen();
+    //   Controller.Screen.print(EncoderL.rotation(rotationUnits::deg));
+    //   Controller.Screen.print(", ");
+    //   Controller.Screen.print(EncoderL.velocity(velocityUnits::rpm));
+    //   Controller.Screen.newLine();
+    //   Controller.Screen.print(EncoderR.rotation(rotationUnits::deg));
+    //   Controller.Screen.print(", ");
+    //   Controller.Screen.print(EncoderR.velocity(velocityUnits::rpm));
+    //   Controller.Screen.newLine();
+    //   Controller.Screen.print(EncoderB.rotation(rotationUnits::deg));
+    //   Controller.Screen.print(", ");
+    //   Controller.Screen.print(EncoderB.velocity(velocityUnits::rpm));
+    //   Controller.Screen.newLine();
+    // }
+
     double gyroReading = Gyro.heading();
     if(Controller.ButtonX.pressing()){
       speed = 1;
@@ -341,14 +362,6 @@ void usercontrol(void) {
     MotorB.spin(directionType::fwd, (normalizedX - normalizedY - rot) * speed, velocityUnits::pct);
     MotorC.spin(directionType::fwd, (normalizedX + normalizedY - rot) * speed, velocityUnits::pct);
     MotorD.spin(directionType::fwd, (normalizedX - normalizedY + rot) * speed, velocityUnits::pct);
-
-    // Controller.Screen.setCursor(0, 0);
-    // Controller.Screen.clearScreen();
-    // Controller.Screen.print((normalizedX + normalizedY + rot) * speed);
-    // Controller.Screen.print((normalizedX - normalizedY - rot) * speed);
-    // Controller.Screen.print((normalizedX + normalizedY - rot) * speed);
-    // Controller.Screen.print((normalizedX - normalizedY + rot) * speed);
-    // Controller.Screen.newLine();
 
     if(Controller.ButtonY.pressing()){
       RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
@@ -622,7 +635,7 @@ void skillsAutonomous(void) {
   // Moving left towards true mid tower
   moveCardinal(cardinal::left, 17);
   stopRollers();
-  moveCardinal(cardinal::forward, 11, 60, 1200);
+  moveCardinal(cardinal::forward, 9, 60, 1200);
   for(int i = 0; i < 3; i++){
     // moveCardinal(cardinal::forward, 6);
     // moveCardinal(cardinal::reverse, 6);
