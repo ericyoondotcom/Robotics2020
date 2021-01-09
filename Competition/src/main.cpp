@@ -15,7 +15,7 @@ using namespace vex;
 
 #define ROLLER_SPEED_FWD 100
 #define ROLLER_SPEED_REV 80
-#define ROLLER_UNSTUCK_SPEED 50
+#define ROLLER_UNSTUCK_SPEED 80
 #define INTAKE_SPEED_FWD 75
 #define INTAKE_SPEED_REV 70
 #define INTAKE_OPEN_POS 100
@@ -598,7 +598,7 @@ void skillsAutonomous(void) {
   // robot is on Red Center Tower
   spinRollers(fwd);
   spinIntakes(fwd);
-  vex::this_thread::sleep_for(1200);
+  vex::this_thread::sleep_for(700);
   stopRollers();
   moveCardinal(cardinal::reverse, 5);
   // Now off the center tower
@@ -631,11 +631,11 @@ void skillsAutonomous(void) {
   turnToAngle(270 + 45 + 5, 75);
   stopIntakes();
   moveCardinal(cardinal::forward, 34);
-  turnToAngle(0, 50);
+  turnToAngle(0 + 5, 50);
   // Moving left towards true mid tower
-  moveCardinal(cardinal::left, 17);
+  moveCardinal(cardinal::left, 19);
   stopRollers();
-  moveCardinal(cardinal::forward, 9, 60, 1200);
+  moveCardinal(cardinal::forward, 5, 60, 1000);
   for(int i = 0; i < 3; i++){
     // moveCardinal(cardinal::forward, 6);
     // moveCardinal(cardinal::reverse, 6);
