@@ -591,14 +591,14 @@ void skillsAutonomous(void) {
   // spinRollers(directionType::rev);
   // vex::this_thread::sleep_for(600);
   RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
-  vex::this_thread::sleep_for(250);
+  vex::this_thread::sleep_for(100);
   stopRollers();
   moveCardinal(cardinal::left, 42);
   moveCardinal(cardinal::forward, 13, 35, 1000); // Intentionally go too far— it's to square up the robot
   // robot is on Red Center Tower
   spinRollers(fwd);
   spinIntakes(fwd);
-  vex::this_thread::sleep_for(700);
+  vex::this_thread::sleep_for(1200);
   stopRollers();
   moveCardinal(cardinal::reverse, 5);
   // Now off the center tower
@@ -621,7 +621,7 @@ void skillsAutonomous(void) {
   spinIntakes(fwd);
   vex::this_thread::sleep_for(600);
   stopRollers();
-  moveCardinal(cardinal::forward, 22, 35, 2000);
+  moveCardinal(cardinal::forward, 19, 35, 2000);
   // robot is on Red Right Tower
   spinRollers(fwd);
   vex::this_thread::sleep_for(900);
@@ -635,6 +635,7 @@ void skillsAutonomous(void) {
   // Moving left towards true mid tower
   moveCardinal(cardinal::left, 19);
   stopRollers();
+  turnToAngle(0 + 9, 50);
   moveCardinal(cardinal::forward, 5, 60, 1000);
   for(int i = 0; i < 3; i++){
     // moveCardinal(cardinal::forward, 6);
