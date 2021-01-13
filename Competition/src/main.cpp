@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <stdlib.h>
+#include <iostream>
 using namespace vex;
 
 // ************
@@ -109,10 +110,6 @@ void setupRobot(){
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
-  // Controller.Screen.setCursor(0, 0);
-  // Controller.Screen.clearScreen();
-  // Controller.Screen.print("CALIBRATED!");
-  // Controller.Screen.newLine();
 }
 
 void moveCardinal(cardinal direction, float inches, float speed = 35, float timeout = 10000){
@@ -339,15 +336,15 @@ int odometryTaskCallback(){
 
       // Calculate the chords of the arc path, which will be the delta x and y in coordinate space
       // Chord length formula: 2 * r * sin(theta / 2)
-      deltaX = 2.0f * std::sin(deltaRot / 2.0f) * arcRadiusX;
-      deltaY = 2.0f * std::sin(deltaRot / 2.0f) * arcRadiusY;
+      deltaX = 2 * std::sin(deltaRot / 2.0f) * arcRadiusX;
+      deltaY = 2 * std::sin(deltaRot / 2.0f) * arcRadiusY;
     }
 
     // Delta movement needs to be rotated to be relative to the field. This should be the same algo as relative driving!
     float euclidianDistance = sqrt(std::pow(deltaX, 2) + std::pow(deltaY, 2));
-    float vectorAngle = (float)std::fmod((std::atan(deltaY / deltaX) + (2.0f * M_PI)), (2.0f * M_PI));
-    float wrappedRot = (float)std::fmod((double)rot, 2.0f * M_PI) + (2.0f * M_PI);
-    float relativeAngle = (float)std::fmod((double)(wrappedRot + vectorAngle), (double)(2.0f * M_PI));
+    float vectorAngle = (deltaX == 0) ? (deltaY > 0 ? M_PI * 0.5f : M_PI * 1.5f) : (float)std::fmod((std::atan(deltaY / deltaX) + (2.0f * M_PI)), (2.0f * M_PI));
+    float wrappedRot = std::fmod((double)rot, 2.0f * M_PI) + (2.0f * M_PI);
+    float relativeAngle = std::fmod((double)(wrappedRot + vectorAngle), (double)(2.0f * M_PI));
 
     // Relative angle not calculated right (resets to 0 when vectorAngle is zero, not respecting WrappedRot)
     // Which causes cos and sin to do something... comment out cos and sin and it work
@@ -358,37 +355,13 @@ int odometryTaskCallback(){
     posX += normalizedX;
     posY += normalizedY;
 
+#ifdef DEBUG
     if(Controller.ButtonY.pressing()){
-      Controller.Screen.setCursor(0, 0);
-      Controller.Screen.clearScreen();
-
-      Controller.Screen.print("VA: ");
-      Controller.Screen.print(vectorAngle);
-      Controller.Screen.newLine();
-      Controller.Screen.print("WR: ");
-      Controller.Screen.print(wrappedRot);
-      Controller.Screen.newLine();
-      Controller.Screen.print("RA: ");
-      Controller.Screen.print(relativeAngle);
-      Controller.Screen.newLine();
-
-      // Controller.Screen.print("X: ");
-      // Controller.Screen.print(posX);
-      // Controller.Screen.print(", dX: ");
-      // Controller.Screen.print(normalizedX);
-      // Controller.Screen.newLine();
-      // Controller.Screen.print("Y: ");
-      // Controller.Screen.print(posY);
-      // Controller.Screen.print(", dY: ");
-      // Controller.Screen.print(normalizedY);
-      // Controller.Screen.newLine();
-      // Controller.Screen.print("rot: ");
-      // Controller.Screen.print(rot);
-      // Controller.Screen.print(", dRot: ");
-      // Controller.Screen.print(deltaRot);
-      // Controller.Screen.newLine();
+      // std::cout << "VA: " << vectorAngle << "\t\tWR: " << wrappedRot << "\t\tRA: " << relativeAngle << std::endl;
+      // std::cout << "X: " << posX << "\t\tdX: " << normalizedX << "\t\tY: " << posY << "\t\tdY: " << normalizedY << "\t\tR: " << rot << "\t\tdR: " << deltaRot << std::endl;
+      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (rot / (2 * M_PI) * 360) << "°\n";
     }
-  
+#endif
     vex::this_thread::sleep_for(CYCLE_TIME);
   }
   return 0;
@@ -459,7 +432,7 @@ void usercontrol(void) {
     }
 
     float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
-    float stickAngle = driveY == 0 ? 0 : std::fmod((std::atan(driveY / driveX) * 180 / M_PI) + 360, 360);
+    float stickAngle = driveY == 0 ? 0 : std::fmod((std::atan(driveY / driveX) * 180 / M_PI) + 360, 360); // Why is the ternary condition driveY, not driveX?
     float relativeAngle = enableRelativeDriving ? std::fmod(stickAngle + gyroReading, 360) : stickAngle;
 
     if(euclidianDistance > 1) euclidianDistance = 1;
@@ -758,6 +731,8 @@ void skillsAutonomous(void) {
 }
 
 int main() {
+  std::cout.precision(4);
+
   if(SKILLS){
     Competition.autonomous(skillsAutonomous);
   }else if(LIVE_REMOTE){
