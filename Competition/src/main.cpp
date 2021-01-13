@@ -89,10 +89,10 @@ enum cardinal {
 };
 
 void setupRobot(){
-  MotorA.setBrake(brakeType::hold);
-  MotorB.setBrake(brakeType::hold);
-  MotorC.setBrake(brakeType::hold);
-  MotorD.setBrake(brakeType::hold);
+  MotorA.setBrake(brakeType::coast);
+  MotorB.setBrake(brakeType::coast);
+  MotorC.setBrake(brakeType::coast);
+  MotorD.setBrake(brakeType::coast);
   IntakeL.setBrake(brakeType::brake);
   IntakeR.setBrake(brakeType::brake);
   RollerF.setBrake(brakeType::brake);
@@ -106,6 +106,10 @@ void setupRobot(){
   IntakeR.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
   RollerF.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
   RollerB.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+
+  EncoderL.resetRotation();
+  EncoderR.resetRotation();
+  EncoderB.resetRotation();
   Gyro.calibrate();
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
@@ -342,7 +346,17 @@ int odometryTaskCallback(){
 
     // Delta movement needs to be rotated to be relative to the field. This should be the same algo as relative driving!
     float euclidianDistance = sqrt(std::pow(deltaX, 2) + std::pow(deltaY, 2));
-    float vectorAngle = (deltaX == 0) ? (deltaY > 0 ? M_PI * 0.5f : M_PI * 1.5f) : (float)std::fmod((std::atan(deltaY / deltaX) + (2.0f * M_PI)), (2.0f * M_PI));
+    float vectorAngle = 0;
+    if(deltaX == 0){
+      if(deltaY < 0) vectorAngle = 0;
+      else vectorAngle = M_PI;
+    } else {
+      vectorAngle = std::fmod(
+        // Add 2pi to make it positive; then, another pi/2 to make UP zero, rather than RIGHT zero
+        std::atan(deltaY / deltaX) + (2.5f * M_PI),
+        (2.0f * M_PI)
+      );
+    }
     float wrappedRot = std::fmod((double)rot, 2.0f * M_PI) + (2.0f * M_PI);
     float relativeAngle = std::fmod((double)(wrappedRot + vectorAngle), (double)(2.0f * M_PI));
 
@@ -352,14 +366,16 @@ int odometryTaskCallback(){
     float normalizedX = std::cos(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
     float normalizedY = std::sin(relativeAngle) * euclidianDistance * (deltaY < 0 ? -1.0f : 1.0f);
     
-    posX += normalizedX;
+    posX += -normalizedX;
     posY += normalizedY;
 
 #ifdef DEBUG
     if(Controller.ButtonY.pressing()){
-      // std::cout << "VA: " << vectorAngle << "\t\tWR: " << wrappedRot << "\t\tRA: " << relativeAngle << std::endl;
+      // std::cout << "VA: " << (vectorAngle / M_PI * 180) << "\t\t\t\tWR: " << (wrappedRot / M_PI * 180) << "\t\t\t\tRA: " << (relativeAngle / M_PI * 180) << std::endl;
       // std::cout << "X: " << posX << "\t\tdX: " << normalizedX << "\t\tY: " << posY << "\t\tdY: " << normalizedY << "\t\tR: " << rot << "\t\tdR: " << deltaRot << std::endl;
       std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (rot / (2 * M_PI) * 360) << "°\n";
+      // std::cout << (deltaX == 0 ? ">>>>>> DX == 0\t\t\t" : "") << "d[\t" << normalizedX << ",\t\t" << normalizedY << "\t] \t @ \t " << (rot / (2 * M_PI) * 360) << "°\n";
+
     }
 #endif
     vex::this_thread::sleep_for(CYCLE_TIME);
@@ -731,7 +747,7 @@ void skillsAutonomous(void) {
 }
 
 int main() {
-  std::cout.precision(4);
+  std::cout.precision(3);
 
   if(SKILLS){
     Competition.autonomous(skillsAutonomous);
