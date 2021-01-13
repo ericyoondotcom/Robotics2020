@@ -5,11 +5,19 @@
 using namespace vex;
 
 // ************
+#define DEBUG true
 #define SKILLS true
 #define LIVE_REMOTE true
 #define RED_TEAM true
 #define RIGHT_SIDE_AUTON true
 // ************
+
+#define STARTING_POS_X 0
+#define STARTING_POS_Y 0
+#define ENCODER_L_DIST 3.75
+#define ENCODER_R_DIST 3.75
+#define ENCODER_B_DIST 3.75
+#define ODOM_WHEEL_RADIUS 2.75 / 2
 
 #define CONTROLLER_DEADZONE 3
 
@@ -29,7 +37,6 @@ using namespace vex;
 
 #define BUTTON_COOLDOWN_MILLIS 400
 
-
 competition Competition;
 brain Brain;
 controller Controller;
@@ -48,6 +55,13 @@ encoder EncoderL = encoder(Brain.ThreeWirePort.G);
 encoder EncoderB = encoder(Brain.ThreeWirePort.E);
 
 bool enableRelativeDriving = true;
+
+float encLPrev = 0;
+float encRPrev = 0;
+float encBPrev = 0;
+float posX = 0.0f;
+float posY = 0.0f;
+float rot = 0.0f;
 
 float intakePulse = 0;
 
@@ -280,11 +294,106 @@ void onIntakePressed(){
 }
 
 
-  void preDriver(){
-    if(SKILLS){
-      setupRobot();
-    }
+void preDriver(){
+  if(SKILLS){
+    setupRobot();
   }
+}
+
+
+int odometryTaskCallback(){
+  while(true){
+    // Odometry algorithm was super helpfully explained by Team 5225 PiLons. Thanks!
+
+    float encLNew = -1 * EncoderL.rotation(rotationUnits::rev) * M_PI * 2;
+    float encRNew = EncoderR.rotation(rotationUnits::rev) * M_PI * 2;
+    float encBNew = EncoderB.rotation(rotationUnits::rev) * M_PI * 2;
+    float deltaL = encLNew - encLPrev;
+    float deltaR = encRNew - encRPrev;
+    float deltaB = encBNew - encBPrev;
+    encLPrev = encLNew;
+    encRPrev = encRNew;
+    encBPrev = encBNew;
+
+    // Get the arc lengths travelled by the wheels
+    // Just multiply by the wheel radius due to radians pog!
+    float arcL = deltaL * ODOM_WHEEL_RADIUS;
+    float arcR = deltaR * ODOM_WHEEL_RADIUS;
+    float arcB = deltaB * ODOM_WHEEL_RADIUS;
+
+    // Calculate the angle of the robot's arc path, therefore the rotation of the bot
+    float deltaRot = (arcL - arcR) / (ENCODER_L_DIST + ENCODER_R_DIST);
+    rot += deltaRot;
+
+    // Net movement (cartesian coords) since last cycle
+    float deltaX;
+    float deltaY;
+
+    if(deltaRot == 0){
+      // Special case where there was no rotation change
+      deltaX = arcB;
+      deltaY = (arcL + arcR) / 2; // get the avg just for a bit more precision
+    } else {
+      float arcRadiusX = (arcB / deltaRot) + ENCODER_B_DIST; // The radius of the robot's secondary arc path
+      float arcRadiusY = (arcR / deltaRot) + ENCODER_R_DIST; // The radius of the robot's arc path. // TODO: Consider doing this for both L and R then taking avg?
+
+      // Calculate the chords of the arc path, which will be the delta x and y in coordinate space
+      // Chord length formula: 2 * r * sin(theta / 2)
+      deltaX = 2.0f * std::sin(deltaRot / 2.0f) * arcRadiusX;
+      deltaY = 2.0f * std::sin(deltaRot / 2.0f) * arcRadiusY;
+    }
+
+    // Delta movement needs to be rotated to be relative to the field. This should be the same algo as relative driving!
+    float euclidianDistance = sqrt(std::pow(deltaX, 2) + std::pow(deltaY, 2));
+    float vectorAngle = (float)std::fmod((std::atan(deltaY / deltaX) + (2.0f * M_PI)), (2.0f * M_PI));
+    float wrappedRot = (float)std::fmod((double)rot, 2.0f * M_PI) + (2.0f * M_PI);
+    float relativeAngle = (float)std::fmod((double)(wrappedRot + vectorAngle), (double)(2.0f * M_PI));
+
+    // Relative angle not calculated right (resets to 0 when vectorAngle is zero, not respecting WrappedRot)
+    // Which causes cos and sin to do something... comment out cos and sin and it work
+    
+    float normalizedX = std::cos(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
+    float normalizedY = std::sin(relativeAngle) * euclidianDistance * (deltaY < 0 ? -1.0f : 1.0f);
+    
+    posX += normalizedX;
+    posY += normalizedY;
+
+    if(Controller.ButtonY.pressing()){
+      Controller.Screen.setCursor(0, 0);
+      Controller.Screen.clearScreen();
+
+      Controller.Screen.print("VA: ");
+      Controller.Screen.print(vectorAngle);
+      Controller.Screen.newLine();
+      Controller.Screen.print("WR: ");
+      Controller.Screen.print(wrappedRot);
+      Controller.Screen.newLine();
+      Controller.Screen.print("RA: ");
+      Controller.Screen.print(relativeAngle);
+      Controller.Screen.newLine();
+
+      // Controller.Screen.print("X: ");
+      // Controller.Screen.print(posX);
+      // Controller.Screen.print(", dX: ");
+      // Controller.Screen.print(normalizedX);
+      // Controller.Screen.newLine();
+      // Controller.Screen.print("Y: ");
+      // Controller.Screen.print(posY);
+      // Controller.Screen.print(", dY: ");
+      // Controller.Screen.print(normalizedY);
+      // Controller.Screen.newLine();
+      // Controller.Screen.print("rot: ");
+      // Controller.Screen.print(rot);
+      // Controller.Screen.print(", dRot: ");
+      // Controller.Screen.print(deltaRot);
+      // Controller.Screen.newLine();
+    }
+  
+    vex::this_thread::sleep_for(CYCLE_TIME);
+  }
+  return 0;
+}
+
 
 void usercontrol(void) {
   while(Gyro.isCalibrating()){
@@ -305,26 +414,30 @@ void usercontrol(void) {
   //   }
   // }
 
-  while(true){
+#ifdef DEBUG
+  task odomTask( odometryTaskCallback );
+#endif
 
+  while(true){
+    double gyroReading = Gyro.heading();
+
+#ifdef DEBUG
     // if(Controller.ButtonY.pressing()){
     //   Controller.Screen.setCursor(0, 0);
     //   Controller.Screen.clearScreen();
-    //   Controller.Screen.print(EncoderL.rotation(rotationUnits::deg));
+    //   Controller.Screen.print(posX);
     //   Controller.Screen.print(", ");
-    //   Controller.Screen.print(EncoderL.velocity(velocityUnits::rpm));
+    //   Controller.Screen.print(posY);
     //   Controller.Screen.newLine();
-    //   Controller.Screen.print(EncoderR.rotation(rotationUnits::deg));
-    //   Controller.Screen.print(", ");
-    //   Controller.Screen.print(EncoderR.velocity(velocityUnits::rpm));
+    //   Controller.Screen.print("Rot odom: ");
+    //   Controller.Screen.print(rot * 360 / 2 / M_PI);
     //   Controller.Screen.newLine();
-    //   Controller.Screen.print(EncoderB.rotation(rotationUnits::deg));
-    //   Controller.Screen.print(", ");
-    //   Controller.Screen.print(EncoderB.velocity(velocityUnits::rpm));
+    //   Controller.Screen.print("Rot gyro: ");
+    //   Controller.Screen.print(gyroReading);
     //   Controller.Screen.newLine();
     // }
+#endif
 
-    double gyroReading = Gyro.heading();
     if(Controller.ButtonX.pressing()){
       speed = 1;
     }
@@ -491,7 +604,6 @@ void usercontrol(void) {
     vex::this_thread::sleep_for(CYCLE_TIME);
   }
 }
-
 
 void pre_auton(void) {
   vexcodeInit();
