@@ -62,7 +62,7 @@ float encRPrev = 0;
 float encBPrev = 0;
 float posX = 0.0f;
 float posY = 0.0f;
-float rot = 0.0f;
+float currRot = 0.0f;
 
 float intakePulse = 0;
 
@@ -324,7 +324,12 @@ int odometryTaskCallback(){
 
     // Calculate the angle of the robot's arc path, therefore the rotation of the bot
     float deltaRot = (arcL - arcR) / (ENCODER_L_DIST + ENCODER_R_DIST);
-    rot += deltaRot;
+    currRot += deltaRot;
+    // Make positive and wrap around 2pi 
+    currRot = std::fmod(currRot, 2.0f * M_PI);
+    if(currRot < 0) {
+      currRot += (2.0f * M_PI);
+    }
 
     // Net movement (cartesian coords) since last cycle
     float deltaX;
@@ -357,25 +362,22 @@ int odometryTaskCallback(){
         (2.0f * M_PI)
       );
     }
-    float wrappedRot = std::fmod((double)rot, 2.0f * M_PI) + (2.0f * M_PI);
-    float relativeAngle = std::fmod((double)(wrappedRot + vectorAngle), (double)(2.0f * M_PI));
+    float relativeAngle = std::fmod((double)(currRot + vectorAngle), (double)(2.0f * M_PI));
 
-    // Relative angle not calculated right (resets to 0 when vectorAngle is zero, not respecting WrappedRot)
-    // Which causes cos and sin to do something... comment out cos and sin and it work
-    
     float normalizedX = std::cos(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
-    float normalizedY = std::sin(relativeAngle) * euclidianDistance * (deltaY < 0 ? -1.0f : 1.0f);
+    float normalizedY = std::sin(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
     
     posX += -normalizedX;
-    posY += normalizedY;
+    posY += -normalizedY;
 
 #ifdef DEBUG
     if(Controller.ButtonY.pressing()){
+      // std::cout << deltaY << "\t\t\t" << normalizedY << std::endl;
       // std::cout << "VA: " << (vectorAngle / M_PI * 180) << "\t\t\t\tWR: " << (wrappedRot / M_PI * 180) << "\t\t\t\tRA: " << (relativeAngle / M_PI * 180) << std::endl;
       // std::cout << "X: " << posX << "\t\tdX: " << normalizedX << "\t\tY: " << posY << "\t\tdY: " << normalizedY << "\t\tR: " << rot << "\t\tdR: " << deltaRot << std::endl;
-      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (rot / (2 * M_PI) * 360) << "°\n";
       // std::cout << (deltaX == 0 ? ">>>>>> DX == 0\t\t\t" : "") << "d[\t" << normalizedX << ",\t\t" << normalizedY << "\t] \t @ \t " << (rot / (2 * M_PI) * 360) << "°\n";
 
+      // std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
     }
 #endif
     vex::this_thread::sleep_for(CYCLE_TIME);
@@ -383,6 +385,54 @@ int odometryTaskCallback(){
   return 0;
 }
 
+float MAX_ERROR_XY = 2 * 24 * sqrt(2); // Max distance you can be off = hypotenuse of field
+const float INTEGRAL_COEFF = 5;
+const float ERROR_THRESHOLD_XY = 1;
+const float ERROR_THRESHOLD_ROT = 1;
+void smartmove(float x, float y, float rotDeg, bool pid = true, float baseSpeed = 40, float baseRotSpeed = 70){
+  float errorXY = infinityf();
+  float errorRot = infinityf();
+  float rot = rotDeg * M_PI / 180;
+
+  while(errorXY > ERROR_THRESHOLD_XY || errorRot > ERROR_THRESHOLD_ROT){
+    float xDiff = x - posX;
+    float yDiff = y - posY;
+    errorXY = sqrt(pow(xDiff, 2) + pow(yDiff, 2));
+    errorRot = std::abs(currRot - rot);
+
+    float speedXY = baseSpeed * (errorXY > ERROR_THRESHOLD_XY ? 1 : 0);
+    float rotSpeed = baseRotSpeed * (errorRot > ERROR_THRESHOLD_ROT ? 1 : 0);
+
+    float theta = std::fmod(std::atan(xDiff / yDiff) + (2 * M_PI), 2 * M_PI);
+    theta = std::fmod(theta + rot, 2 * M_PI);
+    float normalizedX = std::cos(theta) * speedXY * (xDiff < 0 ? -1 : 1);
+    float normalizedY = std::sin(theta) * speedXY * (xDiff < 0 ? -1 : 1);
+    
+    bool turnRight;
+    // determine best direction
+    if(rot > currRot){
+      turnRight = !(rot - currRot <= M_PI);
+    }else{
+      turnRight = (currRot - rot > M_PI);
+    }
+    rotSpeed *= turnRight ? 1 : -1;
+    
+    
+    rotSpeed = 0;
+
+    MotorA.spin(directionType::fwd, normalizedX + normalizedY + rotSpeed, velocityUnits::pct);
+    MotorB.spin(directionType::fwd, normalizedX - normalizedY - rotSpeed, velocityUnits::pct);
+    MotorC.spin(directionType::fwd, normalizedX + normalizedY - rotSpeed, velocityUnits::pct);
+    MotorD.spin(directionType::fwd, normalizedX - normalizedY + rotSpeed, velocityUnits::pct);
+
+    if(Controller.ButtonY.pressing()){
+      std::cout << "[" << posX << ",\t" << posY << "]\t\t diff: [" << xDiff << ",\t" << yDiff << "]\ttheta " << (theta * 180 / M_PI) << std::endl; 
+    }
+
+    vex::this_thread::sleep_for(20);
+  }
+    
+}
 
 void usercontrol(void) {
   while(Gyro.isCalibrating()){
@@ -411,20 +461,11 @@ void usercontrol(void) {
     double gyroReading = Gyro.heading();
 
 #ifdef DEBUG
-    // if(Controller.ButtonY.pressing()){
-    //   Controller.Screen.setCursor(0, 0);
-    //   Controller.Screen.clearScreen();
-    //   Controller.Screen.print(posX);
-    //   Controller.Screen.print(", ");
-    //   Controller.Screen.print(posY);
-    //   Controller.Screen.newLine();
-    //   Controller.Screen.print("Rot odom: ");
-    //   Controller.Screen.print(rot * 360 / 2 / M_PI);
-    //   Controller.Screen.newLine();
-    //   Controller.Screen.print("Rot gyro: ");
-    //   Controller.Screen.print(gyroReading);
-    //   Controller.Screen.newLine();
-    // }
+    if(Controller.ButtonA.pressing()){
+      smartmove(62, 10, 25);
+    } else if(Controller.ButtonB.pressing()){
+      smartmove(0, 0, 0);
+    }
 #endif
 
     if(Controller.ButtonX.pressing()){
