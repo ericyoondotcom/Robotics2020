@@ -393,12 +393,12 @@ const float ROT_KP = 2.0f; // Remember: number must scale up to 100, but its in 
 const float ROT_KD = 0;
 float ERROR_THRESHOLD_XY = 1 * sqrt(2); // 1 inches in both directions allowed
 float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
-void smartmove(float x, float y, float rotDeg, bool pid = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
+void smartmove(float x, float y, float rotDeg, bool doRotation = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
   float errorXY = infinityf();
   float errorRot = infinityf();
   float rot = rotDeg * M_PI / 180;
   bool hasCompletedTranslation = false;
-  bool hasCompletedRotation = false;
+  bool hasCompletedRotation = !doRotation;
 
   while(!hasCompletedTranslation || !hasCompletedRotation){
     float xDiff = x - posX;
@@ -512,13 +512,13 @@ void usercontrol(void) {
 
 #ifdef DEBUG
     if(Controller.ButtonUp.pressing()){
-      smartmove(40, 40, 0);
+      smartmove(40, 40, 0, false);
     } else if(Controller.ButtonRight.pressing()){
-      smartmove(100, 40, 90);
+      smartmove(100, 40, 90, false);
     } else if(Controller.ButtonDown.pressing()){
-      smartmove(100, 100, 180);
+      smartmove(100, 100, 180, false);
     } else if(Controller.ButtonLeft.pressing()){
-      smartmove(40, 100, 270);
+      smartmove(40, 100, 270, false);
     }
 #endif
 
