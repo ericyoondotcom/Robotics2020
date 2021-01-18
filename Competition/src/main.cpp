@@ -6,11 +6,11 @@
 using namespace vex;
 
 // ************
-#define DEBUG true
+//#define DEBUG true // must be commented out, not just set to false
 #define SKILLS false
 #define LIVE_REMOTE true
 #define RED_TEAM true
-#define RIGHT_SIDE_AUTON true
+#define LEFT_SIDE_AUTON true
 // ************
 
 #define STARTING_POS_X 0
@@ -183,10 +183,17 @@ void pointTurn(float degrees){
  * @param useBestDirection    If set to true, the sign of speedPct will be disregarded and the shortest path (left or right) will be taken.
  * @param reverseForPrecision If set to true, robot will turn the opposite direction after turn is finished to compensate for overshooting the target angle.
  */
-void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = true, bool reverseForPrecision = true){
+void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = true, bool reverseForPrecision = true, rotationSource rotSource = rotationSource::inertial){
   const float TOLERANCE = 0;
 
-  float currentHeading = Gyro.heading();
+  float currentHeading;
+  if(rotSource == rotationSource::odometry){
+    currentHeading = currRot * 180 / M_PI;
+  } else if(rotSource == rotationSource::inertial){
+    currentHeading = Gyro.heading();
+  } else if(rotSource == rotationSource::average){
+    currentHeading = ((currRot * 180 / M_PI) + Gyro.heading()) / 2;
+  }
 
   bool condition = true;
 
@@ -378,7 +385,7 @@ int odometryTaskCallback(){
 
 #ifdef DEBUG
     if(Controller.ButtonY.pressing()){
-      // std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
     }
 #endif
     vex::this_thread::sleep_for(CYCLE_TIME);
@@ -434,7 +441,10 @@ void smartmove(float x, float y, float rotDeg, bool doRotation = true, float min
     // Dont allow rotation to stop until translation has completed
     if(errorRot < ERROR_THRESHOLD_ROT && !hasCompletedRotation && hasCompletedTranslation){
       hasCompletedRotation = true;
+#ifdef DEBUG
       Controller.rumble(".");
+      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+#endif
     }
 
     float speedXY;
@@ -503,24 +513,8 @@ void usercontrol(void) {
   //   }
   // }
 
-#ifdef DEBUG
-  task odomTask( odometryTaskCallback );
-#endif
-
   while(true){
     double gyroReading = Gyro.heading();
-
-#ifdef DEBUG
-    if(Controller.ButtonUp.pressing()){
-      smartmove(40, 40, 0, false);
-    } else if(Controller.ButtonRight.pressing()){
-      smartmove(100, 40, 90, false);
-    } else if(Controller.ButtonDown.pressing()){
-      smartmove(100, 100, 180, false);
-    } else if(Controller.ButtonLeft.pressing()){
-      smartmove(40, 100, 270, false);
-    }
-#endif
 
     if(Controller.ButtonX.pressing()){
       speed = 1;
@@ -706,46 +700,49 @@ void liveRemoteAutonomous(void){
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
-  const float DEGREE_CORRECTION = 3;
 
   // Same setup as for skills
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::forward, 16, 65);
-  moveCardinal(cardinal::left, 13, 65);
-  turnToAngle(180 + 45 + DEGREE_CORRECTION, 80, true, false);
+  
+  smartmove(25.7, 27.7, 180 + 45);
+
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
-  moveCardinal(cardinal::forward, 14, 35, 1000);
-  // Robot is on left tower
-  // IntakeL.spin(directionType::fwd, 40, velocityUnits::pct);
-  // IntakeR.spin(directionType::fwd, 40, velocityUnits::pct);
+  vex::this_thread::sleep_for(500);
+
+  smartmove(18.6, 19, 0, false);
+
+  // On left tower
   spinRollers(fwd);
-  vex::this_thread::sleep_for(700);
-  stopIntakes();
-  stopRollers();
+  vex::this_thread::sleep_for(100);
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::reverse, 15, 75);
-  turnToAngle(180 + DEGREE_CORRECTION, 80, true, false);
-  spinRollers(directionType::rev);
-  vex::this_thread::sleep_for(175);
+  vex::this_thread::sleep_for(700);
   stopRollers();
-  moveCardinal(cardinal::reverse, 3, 75);
-  // Move left towards center tower
-  moveCardinal(cardinal::left, 44, 50);
+
+  smartmove(25.7, 24.5, 180);
+  
+  smartmove(26, 70.7, 180);
+
   spinRollers(fwd);
-  moveCardinal(cardinal::forward, 11, 50, 700);
+  // Move left towards center tower
+  smartmove(20, 70.7, 180);
+
   vex::this_thread::sleep_for(500);
   stopRollers();
-  moveCardinal(cardinal::reverse, 7, 50);
-  moveCardinal(cardinal::left, 42, 50);
+  
+  smartmove(27, 70.7, 180);
+  
   // Start facing right tower
-  turnToAngle(90 + 45 + DEGREE_CORRECTION, 75, true, false);
+  // These values are not "correct"; however they are manually adjusted for predictable drift
+  smartmove(12, 110, 90 + 45);
   spinIntakes(fwd);
+  vex::this_thread::sleep_for(500);
+  smartmove(3, 115, 90 + 45);
   spinRollers(directionType::fwd);
-  moveCardinal(cardinal::forward, 30, 90, 1000);
-  spinIntakes(directionType::rev);
   vex::this_thread::sleep_for(1500);
-  moveCardinal(cardinal::reverse, 10);
+  spinIntakes(directionType::rev);
+  
+  smartmove(12, 110, 90 + 45);
   stopIntakes();
   stopRollers();
 }
@@ -844,6 +841,9 @@ void skillsAutonomous(void) {
 
 int main() {
   std::cout.precision(3);
+  pre_auton();
+
+  task odomTask( odometryTaskCallback );
 
   if(SKILLS){
     Competition.autonomous(skillsAutonomous);
@@ -853,8 +853,6 @@ int main() {
     Competition.autonomous(matchAutonomous);
   }
   Competition.drivercontrol(usercontrol);
-
-  pre_auton();
 
   while (true) {
     vex::this_thread::sleep_for(100);
