@@ -2,14 +2,23 @@
 #include <algorithm>
 #include <cmath>
 #include <stdlib.h>
+#include <iostream>
 using namespace vex;
 
 // ************
-#define SKILLS true
+#define DEBUG true
+#define SKILLS false
 #define LIVE_REMOTE true
 #define RED_TEAM true
 #define RIGHT_SIDE_AUTON true
 // ************
+
+#define STARTING_POS_X 0
+#define STARTING_POS_Y 0
+#define ENCODER_L_DIST 3.75
+#define ENCODER_R_DIST 3.75
+#define ENCODER_B_DIST 3.75
+#define ODOM_WHEEL_RADIUS 2.75 / 2
 
 #define CONTROLLER_DEADZONE 3
 
@@ -29,7 +38,6 @@ using namespace vex;
 
 #define BUTTON_COOLDOWN_MILLIS 400
 
-
 competition Competition;
 brain Brain;
 controller Controller;
@@ -48,6 +56,13 @@ encoder EncoderL = encoder(Brain.ThreeWirePort.G);
 encoder EncoderB = encoder(Brain.ThreeWirePort.E);
 
 bool enableRelativeDriving = true;
+
+float encLPrev = 0;
+float encRPrev = 0;
+float encBPrev = 0;
+float posX = 0.0f; // X is forwards/backwards (i know...)
+float posY = 35.3f; // Y is left/right
+float currRot = 0.0f;
 
 float intakePulse = 0;
 
@@ -73,11 +88,17 @@ enum cardinal {
   right
 };
 
+enum rotationSource {
+  odometry,
+  inertial,
+  average
+};
+
 void setupRobot(){
-  MotorA.setBrake(brakeType::hold);
-  MotorB.setBrake(brakeType::hold);
-  MotorC.setBrake(brakeType::hold);
-  MotorD.setBrake(brakeType::hold);
+  MotorA.setBrake(brakeType::coast);
+  MotorB.setBrake(brakeType::coast);
+  MotorC.setBrake(brakeType::coast);
+  MotorD.setBrake(brakeType::coast);
   IntakeL.setBrake(brakeType::brake);
   IntakeR.setBrake(brakeType::brake);
   RollerF.setBrake(brakeType::brake);
@@ -91,14 +112,14 @@ void setupRobot(){
   IntakeR.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
   RollerF.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
   RollerB.setTimeout(MOTOR_TIMEOUT_SECS, timeUnits::sec);
+
+  EncoderL.resetRotation();
+  EncoderR.resetRotation();
+  EncoderB.resetRotation();
   Gyro.calibrate();
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
-  // Controller.Screen.setCursor(0, 0);
-  // Controller.Screen.clearScreen();
-  // Controller.Screen.print("CALIBRATED!");
-  // Controller.Screen.newLine();
 }
 
 void moveCardinal(cardinal direction, float inches, float speed = 35, float timeout = 10000){
@@ -280,11 +301,188 @@ void onIntakePressed(){
 }
 
 
-  void preDriver(){
-    if(SKILLS){
-      setupRobot();
-    }
+void preDriver(){
+  if(SKILLS){
+    setupRobot();
   }
+}
+
+
+int odometryTaskCallback(){
+  while(true){
+    // Odometry algorithm was super helpfully explained by Team 5225 PiLons. Thanks!
+
+    float encLNew = -1 * EncoderL.rotation(rotationUnits::rev) * M_PI * 2;
+    float encRNew = EncoderR.rotation(rotationUnits::rev) * M_PI * 2;
+    float encBNew = EncoderB.rotation(rotationUnits::rev) * M_PI * 2;
+    float deltaL = encLNew - encLPrev;
+    float deltaR = encRNew - encRPrev;
+    float deltaB = encBNew - encBPrev;
+    encLPrev = encLNew;
+    encRPrev = encRNew;
+    encBPrev = encBNew;
+
+    // Get the arc lengths travelled by the wheels
+    // Just multiply by the wheel radius due to radians pog!
+    float arcL = deltaL * ODOM_WHEEL_RADIUS;
+    float arcR = deltaR * ODOM_WHEEL_RADIUS;
+    float arcB = deltaB * ODOM_WHEEL_RADIUS;
+
+    // Calculate the angle of the robot's arc path, therefore the rotation of the bot
+    float deltaRot = (arcL - arcR) / (ENCODER_L_DIST + ENCODER_R_DIST);
+    currRot += deltaRot;
+    // Make positive and wrap around 2pi 
+    currRot = std::fmod(currRot, 2.0f * M_PI);
+    if(currRot < 0) {
+      currRot += (2.0f * M_PI);
+    }
+
+    // Net movement (cartesian coords) since last cycle
+    float deltaX;
+    float deltaY;
+
+    if(deltaRot == 0){
+      // Special case where there was no rotation change
+      deltaX = arcB;
+      deltaY = (arcL + arcR) / 2; // get the avg just for a bit more precision
+    } else {
+      float arcRadiusX = (arcB / deltaRot) + ENCODER_B_DIST; // The radius of the robot's secondary arc path
+      float arcRadiusY = (arcR / deltaRot) + ENCODER_R_DIST; // The radius of the robot's arc path. // TODO: Consider doing this for both L and R then taking avg?
+
+      // Calculate the chords of the arc path, which will be the delta x and y in coordinate space
+      // Chord length formula: 2 * r * sin(theta / 2)
+      deltaX = 2 * std::sin(deltaRot / 2.0f) * arcRadiusX;
+      deltaY = 2 * std::sin(deltaRot / 2.0f) * arcRadiusY;
+    }
+
+    // Delta movement needs to be rotated to be relative to the field. This should be the same algo as relative driving!
+    float euclidianDistance = sqrt(std::pow(deltaX, 2) + std::pow(deltaY, 2));
+    float vectorAngle = 0;
+    if(deltaX == 0){
+      if(deltaY < 0) vectorAngle = 0;
+      else vectorAngle = M_PI;
+    } else {
+      vectorAngle = std::fmod(
+        // Add 2pi to make it positive; then, another pi/2 to make UP zero, rather than RIGHT zero
+        std::atan(deltaY / deltaX) + (2.5f * M_PI),
+        (2.0f * M_PI)
+      );
+    }
+    float relativeAngle = std::fmod((double)(currRot + vectorAngle), (double)(2.0f * M_PI));
+
+    float normalizedX = std::cos(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
+    float normalizedY = std::sin(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
+    
+    posX += -normalizedX;
+    posY += -normalizedY;
+
+#ifdef DEBUG
+    if(Controller.ButtonY.pressing()){
+      // std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+    }
+#endif
+    vex::this_thread::sleep_for(CYCLE_TIME);
+  }
+  return 0;
+}
+
+float MAX_ERROR_XY = 2 * 24 * sqrt(2); // Max distance you can be off = hypotenuse of field
+const float XY_KP = 7;
+const float XY_KD = 2;
+const float ROT_KP = 2.0f; // Remember: number must scale up to 100, but its in degrees
+const float ROT_KD = 0;
+float ERROR_THRESHOLD_XY = 1 * sqrt(2); // 1 inches in both directions allowed
+float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
+void smartmove(float x, float y, float rotDeg, bool doRotation = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
+  float errorXY = infinityf();
+  float errorRot = infinityf();
+  float rot = rotDeg * M_PI / 180;
+  bool hasCompletedTranslation = false;
+  bool hasCompletedRotation = !doRotation;
+
+  while(!hasCompletedTranslation || !hasCompletedRotation){
+    float xDiff = x - posX;
+    float yDiff = posY - y;
+    float oldErrorXY = errorXY;
+    float oldErrorRot = errorRot;
+    float _currRot;
+    if(rotationMode == rotationSource::odometry){
+      _currRot = currRot;
+    } else if(rotationMode == rotationSource::inertial){
+      _currRot = Gyro.heading() * M_PI / 180;
+    } else if(rotationMode == rotationSource::average){
+      _currRot = ( (Gyro.heading() * M_PI / 180) + currRot ) / 2;
+    }
+    bool turnRight;
+    // determine best direction
+    if(rot > _currRot){
+      turnRight = (rot - _currRot <= M_PI);
+    }else{
+      turnRight = (_currRot - rot > M_PI);
+    }
+
+    errorXY = sqrt(pow(xDiff, 2) + pow(yDiff, 2));
+    errorRot = std::fmod ( std::abs(_currRot - rot) * (180 / M_PI), 360);
+    if(errorRot > 180){
+      errorRot = 360 - errorRot;
+    }
+    
+    if(errorXY < ERROR_THRESHOLD_XY && !hasCompletedTranslation){
+      hasCompletedTranslation = true;
+    }
+
+    // Dont allow rotation to stop until translation has completed
+    if(errorRot < ERROR_THRESHOLD_ROT && !hasCompletedRotation && hasCompletedTranslation){
+      hasCompletedRotation = true;
+      Controller.rumble(".");
+    }
+
+    float speedXY;
+    if(hasCompletedTranslation){
+      speedXY = 0;
+    } else {
+      speedXY = (XY_KP * errorXY) + (XY_KD * std::abs(errorXY - oldErrorXY));
+      if(speedXY > maxXYSpeed) speedXY = maxXYSpeed;
+      else if(speedXY < minXYSpeed) speedXY = minXYSpeed;
+    }
+    
+    float rotSpeed;
+    if(hasCompletedRotation){
+      rotSpeed = 0;
+    } else {
+      rotSpeed = (ROT_KP * errorRot) + (ROT_KD * std::abs(errorRot - oldErrorRot));
+      if(rotSpeed > maxRotSpeed) rotSpeed = maxRotSpeed;
+      else if(rotSpeed < minRotSpeed) rotSpeed = minRotSpeed;
+    }
+
+    float theta = std::fmod(std::atan(yDiff / xDiff) + (2 * M_PI), 2 * M_PI);
+    theta = std::fmod(theta + _currRot + (M_PI / 2), 2 * M_PI);
+    float normalizedX = std::cos(theta) * speedXY * (xDiff < 0 ? -1 : 1);
+    float normalizedY = std::sin(theta) * speedXY * (xDiff < 0 ? -1 : 1);
+    
+    rotSpeed *= turnRight ? 1 : -1;
+
+    MotorA.spin(directionType::fwd, normalizedX + normalizedY + rotSpeed, velocityUnits::pct);
+    MotorB.spin(directionType::fwd, normalizedX - normalizedY - rotSpeed, velocityUnits::pct);
+    MotorC.spin(directionType::fwd, normalizedX + normalizedY - rotSpeed, velocityUnits::pct);
+    MotorD.spin(directionType::fwd, normalizedX - normalizedY + rotSpeed, velocityUnits::pct);
+
+#ifdef DEBUG
+    if(Controller.ButtonY.pressing()){
+      std::cout <<
+        "[" << posX << ",\t" << posY << "]\t\t XYdiff: [" << xDiff << ",\t" << yDiff << "]\t\t\terrorXY: " << errorXY <<
+        (turnRight ? "\t\t\t>>>" : "\t\t\t<<<") << "\t\ttheta " << (theta * 180 / M_PI) << "\t\tcurrRot: " << (_currRot * 180 / M_PI) << "\t\trotTarget: " << (rot * 180 / M_PI) << "\t\t rotError: " << errorRot <<
+        "\t\t\tSpeedXY: " << speedXY << "\t\tSpeedRot: " << rotSpeed <<
+        (hasCompletedTranslation ? "\t\tT" : "\t\t.") << (hasCompletedRotation ? "\t\tR" : "\t\t.") << std::endl;
+      // std::cout << "errXY: " << errorXY << "\t\terrRot: " << errorRot << "\t\tSpeedXY: " << speedXY << "\t\tSpeedRot: " << rotSpeed << std::endl;
+      // std::cout << "errRot: " << errorRot << "\t\tSpeedXY: " << speedXY << "\t\tSpeedRot: " << rotSpeed << std::endl;
+      // std::cout << "OG Theta: " << std::fmod(std::atan(yDiff / xDiff) + (2 * M_PI), 2 * M_PI) * 180 / M_PI << "\t\tcurrRot: " << _currRot * 180 / M_PI << "\t\tTheta: " << (theta * 180 / M_PI) << std::endl;
+    }
+#endif
+    vex::this_thread::sleep_for(20);
+  }
+    
+}
 
 void usercontrol(void) {
   while(Gyro.isCalibrating()){
@@ -305,26 +503,25 @@ void usercontrol(void) {
   //   }
   // }
 
+#ifdef DEBUG
+  task odomTask( odometryTaskCallback );
+#endif
+
   while(true){
-
-    // if(Controller.ButtonY.pressing()){
-    //   Controller.Screen.setCursor(0, 0);
-    //   Controller.Screen.clearScreen();
-    //   Controller.Screen.print(EncoderL.rotation(rotationUnits::deg));
-    //   Controller.Screen.print(", ");
-    //   Controller.Screen.print(EncoderL.velocity(velocityUnits::rpm));
-    //   Controller.Screen.newLine();
-    //   Controller.Screen.print(EncoderR.rotation(rotationUnits::deg));
-    //   Controller.Screen.print(", ");
-    //   Controller.Screen.print(EncoderR.velocity(velocityUnits::rpm));
-    //   Controller.Screen.newLine();
-    //   Controller.Screen.print(EncoderB.rotation(rotationUnits::deg));
-    //   Controller.Screen.print(", ");
-    //   Controller.Screen.print(EncoderB.velocity(velocityUnits::rpm));
-    //   Controller.Screen.newLine();
-    // }
-
     double gyroReading = Gyro.heading();
+
+#ifdef DEBUG
+    if(Controller.ButtonUp.pressing()){
+      smartmove(40, 40, 0, false);
+    } else if(Controller.ButtonRight.pressing()){
+      smartmove(100, 40, 90, false);
+    } else if(Controller.ButtonDown.pressing()){
+      smartmove(100, 100, 180, false);
+    } else if(Controller.ButtonLeft.pressing()){
+      smartmove(40, 100, 270, false);
+    }
+#endif
+
     if(Controller.ButtonX.pressing()){
       speed = 1;
     }
@@ -346,7 +543,7 @@ void usercontrol(void) {
     }
 
     float euclidianDistance = std::sqrt(std::pow(driveX / 100, 2)  + std::pow(driveY / 100, 2));
-    float stickAngle = driveY == 0 ? 0 : std::fmod((std::atan(driveY / driveX) * 180 / M_PI) + 360, 360);
+    float stickAngle = driveY == 0 ? 0 : std::fmod((std::atan(driveY / driveX) * 180 / M_PI) + 360, 360); // Why is the ternary condition driveY, not driveX?
     float relativeAngle = enableRelativeDriving ? std::fmod(stickAngle + gyroReading, 360) : stickAngle;
 
     if(euclidianDistance > 1) euclidianDistance = 1;
@@ -406,7 +603,7 @@ void usercontrol(void) {
 
 
     // Delayed trigger buttons code
-
+#ifndef DEBUG
     if(Controller.ButtonUp.pressing()){
       upBtnFlag = true;
       if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
@@ -423,6 +620,7 @@ void usercontrol(void) {
       leftBtnFlag = true;
       if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
     }
+#endif
     if(Controller.ButtonY.pressing()){
       if(bButtonCooldown >= 0) yBtnFlag = true;
     }
@@ -491,7 +689,6 @@ void usercontrol(void) {
     vex::this_thread::sleep_for(CYCLE_TIME);
   }
 }
-
 
 void pre_auton(void) {
   vexcodeInit();
@@ -646,6 +843,8 @@ void skillsAutonomous(void) {
 }
 
 int main() {
+  std::cout.precision(3);
+
   if(SKILLS){
     Competition.autonomous(skillsAutonomous);
   }else if(LIVE_REMOTE){
