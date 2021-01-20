@@ -400,13 +400,14 @@ const float ROT_KP = 2.0f; // Remember: number must scale up to 100, but its in 
 const float ROT_KD = 0;
 float ERROR_THRESHOLD_XY = 1 * sqrt(2); // 1 inches in both directions allowed
 float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
-void smartmove(float x, float y, float rotDeg, bool doRotation = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
+void smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
   float errorXY = infinityf();
   float errorRot = infinityf();
   float rot = rotDeg * M_PI / 180;
   bool hasCompletedTranslation = false;
   bool hasCompletedRotation = !doRotation;
 
+  float t = 0;
   while(!hasCompletedTranslation || !hasCompletedRotation){
     float xDiff = x - posX;
     float yDiff = posY - y;
@@ -489,7 +490,13 @@ void smartmove(float x, float y, float rotDeg, bool doRotation = true, float min
       // std::cout << "OG Theta: " << std::fmod(std::atan(yDiff / xDiff) + (2 * M_PI), 2 * M_PI) * 180 / M_PI << "\t\tcurrRot: " << _currRot * 180 / M_PI << "\t\tTheta: " << (theta * 180 / M_PI) << std::endl;
     }
 #endif
+
+    t += 20;
     vex::this_thread::sleep_for(20);
+
+    if(t >= timeout){
+      return;
+    }
   }
     
 }
@@ -704,13 +711,14 @@ void liveRemoteAutonomous(void){
   // Same setup as for skills
   spinIntakes(directionType::rev);
   
-  smartmove(25.7, 27.7, 180 + 45);
+  smartmove(25.7, 27.7, 180 + 45, 5000, true, 5, 80, 10, 65);
 
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
+
   vex::this_thread::sleep_for(500);
 
-  smartmove(18.6, 19, 0, false);
+  smartmove(17, 17, 0, 1000, false);
 
   // On left tower
   spinRollers(fwd);
@@ -725,19 +733,18 @@ void liveRemoteAutonomous(void){
 
   spinRollers(fwd);
   // Move left towards center tower
-  smartmove(20, 70.7, 180);
-
+  smartmove(20, 70.7, 180, 1000);
   vex::this_thread::sleep_for(500);
   stopRollers();
   
-  smartmove(27, 70.7, 180);
+  smartmove(30, 70.7, 180);
   
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(12, 110, 90 + 45);
+  smartmove(10, 114, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinIntakes(fwd);
   vex::this_thread::sleep_for(500);
-  smartmove(3, 115, 90 + 45);
+  smartmove(3, 115, 90 + 45, 1000);
   spinRollers(directionType::fwd);
   vex::this_thread::sleep_for(1500);
   spinIntakes(directionType::rev);
