@@ -505,6 +505,10 @@ void usercontrol(void) {
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
+  MotorA.setBrake(brakeType::brake);
+  MotorB.setBrake(brakeType::brake);
+  MotorC.setBrake(brakeType::brake);
+  MotorD.setBrake(brakeType::brake);
   IntakeL.resetRotation();
   IntakeR.resetRotation();
   Controller.ButtonR2.pressed(onIntakePressed);
@@ -708,7 +712,7 @@ void liveRemoteAutonomous(void){
     vex::this_thread::sleep_for(20);
   }
 
-  // Same setup as for skills
+  // Same setup as for skills. preload needs to start > 1.5 inches below the hood
   spinIntakes(directionType::rev);
   
   smartmove(25.7, 27.7, 180 + 45, 5000, true, 5, 80, 10, 65);
@@ -716,7 +720,7 @@ void liveRemoteAutonomous(void){
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
 
-  vex::this_thread::sleep_for(500);
+  vex::this_thread::sleep_for(200);
 
   smartmove(17, 17, 0, 1000, false);
 
@@ -729,12 +733,15 @@ void liveRemoteAutonomous(void){
 
   smartmove(25.7, 24.5, 180);
   
-  smartmove(26, 70.7, 180);
+  spinRollers(directionType::rev);
+  vex::this_thread::sleep_for(300);
+  stopRollers();
 
-  spinRollers(fwd);
   // Move left towards center tower
-  smartmove(20, 70.7, 180, 1000);
-  vex::this_thread::sleep_for(500);
+  smartmove(26, 70.7, 180);
+  spinRollers(fwd);
+  smartmove(22, 70.7, 180, 1000);
+  vex::this_thread::sleep_for(700);
   stopRollers();
   
   smartmove(30, 70.7, 180);
