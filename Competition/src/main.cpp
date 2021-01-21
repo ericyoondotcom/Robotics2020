@@ -591,8 +591,8 @@ void usercontrol(void) {
       // IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
       // IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
       holdingIntakes = true;
-      IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
-      IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+      IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 100, velocityUnits::pct);
+      IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 100, velocityUnits::pct);
       IntakeL.setBrake(brakeType::hold);
       IntakeR.setBrake(brakeType::hold);
     } else {
@@ -713,7 +713,7 @@ void liveRemoteAutonomous(void){
     vex::this_thread::sleep_for(20);
   }
 
-  // Same setup as for skills. preload needs to start sandwiched between the bottom front roller and bottom back roller
+  // Same setup as for skills. preload needs to start 2 inches below the hood
   spinIntakes(directionType::rev);
   
   smartmove(25.7, 27.7, 180 + 45, 5000, true, 5, 80, 10, 65);
@@ -724,12 +724,14 @@ void liveRemoteAutonomous(void){
   vex::this_thread::sleep_for(250);
 
   smartmove(21.5, 21.5, 0, 900, false);
-
-  spinRollers(fwd);
-  spinIntakes(directionType::rev);
-  smartmove(17.5, 17.5, 0, 900, false);
+  vex::this_thread::sleep_for(300);
 
   // On left tower
+  spinRollers(fwd);
+  stopIntakes();
+  smartmove(17.5, 17.5, 0, 500, false);
+  spinIntakes(directionType::rev);
+
   stopRollers();
 
   smartmove(25.7, 24.5, 180);
@@ -752,9 +754,8 @@ void liveRemoteAutonomous(void){
   smartmove(12, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(fwd);
-  vex::this_thread::sleep_for(500);
-  smartmove(3, 118, 90 + 45, 1000);
   vex::this_thread::sleep_for(300);
+  smartmove(3, 118, 90 + 45, 600);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
   spinIntakes(directionType::rev);
