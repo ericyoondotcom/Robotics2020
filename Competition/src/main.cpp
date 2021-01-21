@@ -713,7 +713,7 @@ void liveRemoteAutonomous(void){
     vex::this_thread::sleep_for(20);
   }
 
-  // Same setup as for skills. preload needs to start > 1.5 inches below the hood
+  // Same setup as for skills. preload needs to start sandwiched between the bottom front roller and bottom back roller
   spinIntakes(directionType::rev);
   
   smartmove(25.7, 27.7, 180 + 45, 5000, true, 5, 80, 10, 65);
@@ -721,22 +721,22 @@ void liveRemoteAutonomous(void){
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
 
-  vex::this_thread::sleep_for(200);
+  vex::this_thread::sleep_for(250);
 
-  smartmove(18, 18, 0, 900, false);
+  smartmove(21.5, 21.5, 0, 900, false);
+
+  spinRollers(fwd);
+  spinIntakes(directionType::rev);
+  smartmove(17.5, 17.5, 0, 900, false);
 
   // On left tower
-  spinRollers(fwd);
-  vex::this_thread::sleep_for(50);
-  spinIntakes(directionType::rev);
-  vex::this_thread::sleep_for(750);
   stopRollers();
 
   smartmove(25.7, 24.5, 180);
   
-  spinRollers(directionType::rev);
-  vex::this_thread::sleep_for(400);
-  stopRollers();
+  // spinRollers(directionType::rev);
+  // vex::this_thread::sleep_for(400);
+  // stopRollers();
 
   // Move left towards center tower
   smartmove(26, 70.7, 180);
