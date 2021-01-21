@@ -708,6 +708,7 @@ void matchAutonomous(void){
 }
 
 void liveRemoteAutonomous(void){
+
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
@@ -722,25 +723,25 @@ void liveRemoteAutonomous(void){
 
   vex::this_thread::sleep_for(200);
 
-  smartmove(17, 17, 0, 1000, false);
+  smartmove(18, 18, 0, 900, false);
 
   // On left tower
   spinRollers(fwd);
-  vex::this_thread::sleep_for(100);
+  vex::this_thread::sleep_for(50);
   spinIntakes(directionType::rev);
-  vex::this_thread::sleep_for(700);
+  vex::this_thread::sleep_for(750);
   stopRollers();
 
   smartmove(25.7, 24.5, 180);
   
   spinRollers(directionType::rev);
-  vex::this_thread::sleep_for(300);
+  vex::this_thread::sleep_for(400);
   stopRollers();
 
   // Move left towards center tower
   smartmove(26, 70.7, 180);
   spinRollers(fwd);
-  smartmove(22, 70.7, 180, 1000);
+  smartmove(21.5, 70.7, 180, 1000);
   vex::this_thread::sleep_for(700);
   stopRollers();
   
@@ -748,12 +749,14 @@ void liveRemoteAutonomous(void){
   
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(10, 114, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(12, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
+  spinRollers(directionType::fwd);
   spinIntakes(fwd);
   vex::this_thread::sleep_for(500);
-  smartmove(3, 115, 90 + 45, 1000);
-  spinRollers(directionType::fwd);
-  vex::this_thread::sleep_for(1500);
+  smartmove(3, 118, 90 + 45, 1000);
+  vex::this_thread::sleep_for(300);
+  stopIntakes();
+  vex::this_thread::sleep_for(1200);
   spinIntakes(directionType::rev);
   
   smartmove(12, 110, 90 + 45);
@@ -857,7 +860,9 @@ int main() {
   std::cout.precision(3);
   pre_auton();
 
+
   task odomTask( odometryTaskCallback );
+
 
   if(SKILLS){
     Competition.autonomous(skillsAutonomous);
