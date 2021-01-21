@@ -25,8 +25,8 @@ using namespace vex;
 #define ROLLER_SPEED_FWD 100
 #define ROLLER_SPEED_REV 80
 #define ROLLER_UNSTUCK_SPEED 80
-#define INTAKE_SPEED_FWD 75
-#define INTAKE_SPEED_REV 70
+#define INTAKE_SPEED_FWD 80
+#define INTAKE_SPEED_REV 80
 #define INTAKE_OPEN_POS 100
 
 #define MACROS_ORTHOGONAL_SPEED 75
@@ -755,7 +755,7 @@ void liveRemoteAutonomous(void){
   spinRollers(directionType::fwd);
   spinIntakes(fwd);
   vex::this_thread::sleep_for(300);
-  smartmove(3, 118, 90 + 45, 600);
+  smartmove(3, 116, 90 + 45, 600);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
   spinIntakes(directionType::rev);
