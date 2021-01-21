@@ -756,6 +756,7 @@ void liveRemoteAutonomous(void){
   spinIntakes(fwd);
   vex::this_thread::sleep_for(300);
   smartmove(3, 116, 90 + 45, 600);
+  vex::this_thread::sleep_for(300);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
   spinIntakes(directionType::rev);
