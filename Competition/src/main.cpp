@@ -502,7 +502,10 @@ void smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRota
 }
 
 void usercontrol(void) {
+  float t = 0;
+  bool timeNotifSounded = false;
   while(Gyro.isCalibrating()){
+    t += 20;
     vex::this_thread::sleep_for(20);
   }
   MotorA.setBrake(brakeType::brake);
@@ -691,6 +694,12 @@ void usercontrol(void) {
       bButtonCooldown += CYCLE_TIME;
     }
 
+    if(!timeNotifSounded && t > 95000){ // 10secs left notification
+      Controller.rumble(".....");
+      timeNotifSounded = true;
+    }
+
+    t += CYCLE_TIME;
     vex::this_thread::sleep_for(CYCLE_TIME);
   }
 }
@@ -734,7 +743,7 @@ void liveRemoteAutonomous(void){
 
   stopRollers();
 
-  smartmove(25.7, 24.5, 180);
+  smartmove(26, 24.5, 180);
   
   // spinRollers(directionType::rev);
   // vex::this_thread::sleep_for(400);
@@ -751,11 +760,11 @@ void liveRemoteAutonomous(void){
   
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(12, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(17, 114, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(fwd);
   vex::this_thread::sleep_for(300);
-  smartmove(3, 116, 90 + 45, 600);
+  smartmove(3, 119, 90 + 45, 600);
   vex::this_thread::sleep_for(300);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
