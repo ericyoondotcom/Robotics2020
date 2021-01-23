@@ -599,7 +599,7 @@ void usercontrol(void) {
       IntakeL.setBrake(brakeType::hold);
       IntakeR.setBrake(brakeType::hold);
     } else {
-      if(IntakeL.isDone() && IntakeR.isDone()){
+      if((IntakeL.isDone() && IntakeR.isDone()) || !holdingIntakes){
         IntakeL.stop();
         IntakeR.stop();
       }
