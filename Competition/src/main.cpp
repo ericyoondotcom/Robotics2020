@@ -7,7 +7,7 @@ using namespace vex;
 
 // ************
 #define DEBUG false
-#define AUTON_NOT_PRELOADED true
+#define AUTON_NOT_PRELOADED true // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS false
 #define LIVE_REMOTE true
 #define RED_TEAM true
@@ -795,7 +795,7 @@ void liveRemoteAutonomous(void){
 
   thread rollerThread;
 
-  // Same setup as for skills. preload needs to start in the triangle between the back rollers and the bottom front roller
+  // Same setup as for skills. preload needs to start 3 inches below the hood
   spinIntakes(directionType::rev);
 #if AUTON_NOT_PRELOADED
   vex::this_thread::sleep_for(500);
@@ -807,20 +807,20 @@ void liveRemoteAutonomous(void){
 
   vex::this_thread::sleep_for(150);
 
-  smartmove(21.5, 21.5, 0, 900, false);
+  smartmove(21.5, 20.5, 0, 900, false);
   vex::this_thread::sleep_for(300);
 
   // On left tower
-  rollerThread = spinRollersForAsync(directionType::fwd, 2.7);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2.4);
   stopIntakes();
 
   smartmove(17.5, 18, 0, 500, false);
   spinIntakes(directionType::rev);
   rollerThread.join();
 
-  rollerThread = spinRollersForAsync(directionType::rev, 1);
+  RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
   smartmove(26, 24.5, 180);
-  rollerThread.join();
 
 
   // Move left towards center tower
@@ -836,7 +836,7 @@ void liveRemoteAutonomous(void){
   smartmove(18, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(fwd);
-  vex::this_thread::sleep_for(400);
+  vex::this_thread::sleep_for(300);
   smartmove(3, 119, 90 + 45, 600);
   vex::this_thread::sleep_for(300);
   stopIntakes();
