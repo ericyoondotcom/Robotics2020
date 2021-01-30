@@ -6,7 +6,7 @@
 using namespace vex;
 
 // ************
-//#define DEBUG true // must be commented out, not just set to false
+#define DEBUG true
 #define SKILLS false
 #define LIVE_REMOTE true
 #define RED_TEAM true
@@ -322,6 +322,7 @@ int odometryTaskCallback(){
     float encLNew = -1 * EncoderL.rotation(rotationUnits::rev) * M_PI * 2;
     float encRNew = EncoderR.rotation(rotationUnits::rev) * M_PI * 2;
     float encBNew = EncoderB.rotation(rotationUnits::rev) * M_PI * 2;
+    
     float deltaL = encLNew - encLPrev;
     float deltaR = encRNew - encRPrev;
     float deltaB = encBNew - encBPrev;
@@ -383,9 +384,10 @@ int odometryTaskCallback(){
     posX += -normalizedX;
     posY += -normalizedY;
 
-#ifdef DEBUG
+#if DEBUG
     if(Controller.ButtonY.pressing()){
       std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+      // std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
     }
 #endif
     vex::this_thread::sleep_for(CYCLE_TIME);
@@ -442,7 +444,7 @@ void smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRota
     // Dont allow rotation to stop until translation has completed
     if(errorRot < ERROR_THRESHOLD_ROT && !hasCompletedRotation && hasCompletedTranslation){
       hasCompletedRotation = true;
-#ifdef DEBUG
+#if DEBUG
       Controller.rumble(".");
       std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
 #endif
@@ -478,7 +480,7 @@ void smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRota
     MotorC.spin(directionType::fwd, normalizedX + normalizedY - rotSpeed, velocityUnits::pct);
     MotorD.spin(directionType::fwd, normalizedX - normalizedY + rotSpeed, velocityUnits::pct);
 
-#ifdef DEBUG
+#if DEBUG
     if(Controller.ButtonY.pressing()){
       std::cout <<
         "[" << posX << ",\t" << posY << "]\t\t XYdiff: [" << xDiff << ",\t" << yDiff << "]\t\t\terrorXY: " << errorXY <<
@@ -508,16 +510,24 @@ void usercontrol(void) {
     t += 20;
     vex::this_thread::sleep_for(20);
   }
+#if DEBUG
+  MotorA.setBrake(brakeType::coast);
+  MotorB.setBrake(brakeType::coast);
+  MotorC.setBrake(brakeType::coast);
+  MotorD.setBrake(brakeType::coast);
+#else
   MotorA.setBrake(brakeType::brake);
   MotorB.setBrake(brakeType::brake);
   MotorC.setBrake(brakeType::brake);
   MotorD.setBrake(brakeType::brake);
+#endif
   IntakeL.resetRotation();
   IntakeR.resetRotation();
   Controller.ButtonR2.pressed(onIntakePressed);
   
   float speed = 1;
   bool holdingIntakes = false;
+  bool holdingIntakes180 = false;
 
   // while(true){
   //   if(Controller.ButtonA.pressing()){
@@ -568,6 +578,7 @@ void usercontrol(void) {
     MotorC.spin(directionType::fwd, (normalizedX + normalizedY - rot) * speed, velocityUnits::pct);
     MotorD.spin(directionType::fwd, (normalizedX - normalizedY + rot) * speed, velocityUnits::pct);
 
+#if !DEBUG
     if(Controller.ButtonY.pressing()){
       RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
       RollerB.spin(directionType::fwd, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
@@ -580,24 +591,34 @@ void usercontrol(void) {
       RollerF.stop();
       RollerB.stop();
     }
+#endif
 
     if(Controller.ButtonR1.pressing() || intakePulse > 0){
       IntakeL.setBrake(brakeType::coast);
       IntakeR.setBrake(brakeType::coast);
       holdingIntakes = false;
+      holdingIntakes180 = false;
       IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
       IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
       // IntakeL.resetPosition();
       // IntakeR.resetPosition();
     }
+    else if(Controller.ButtonDown.pressing()){
+      holdingIntakes = false;
+      holdingIntakes180 = true;
+    }
     else if(Controller.ButtonL1.pressing() && !holdingIntakes){
       // IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
       // IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
       holdingIntakes = true;
+      holdingIntakes180 = false;
       IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 100, velocityUnits::pct);
       IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 100, velocityUnits::pct);
       IntakeL.setBrake(brakeType::hold);
       IntakeR.setBrake(brakeType::hold);
+    } else if(holdingIntakes180){
+      IntakeL.spin(directionType::rev, 100, velocityUnits::pct);
+      IntakeR.spin(directionType::rev, 100, velocityUnits::pct);
     } else {
       if((IntakeL.isDone() && IntakeR.isDone()) || !holdingIntakes){
         IntakeL.stop();
@@ -611,24 +632,24 @@ void usercontrol(void) {
 
 
     // Delayed trigger buttons code
-#ifndef DEBUG
-    if(Controller.ButtonUp.pressing()){
-      upBtnFlag = true;
-      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
-    }
-    if(Controller.ButtonRight.pressing()){
-      rightBtnFlag = true;
-      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
-    }
-    if(Controller.ButtonDown.pressing()){
-      downBtnFlag = true;
-      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
-    }
-    if(Controller.ButtonLeft.pressing()){
-      leftBtnFlag = true;
-      if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
-    }
-#endif
+
+    // if(Controller.ButtonUp.pressing()){
+    //   upBtnFlag = true;
+    //   if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    // }
+    // if(Controller.ButtonRight.pressing()){
+    //   rightBtnFlag = true;
+    //   if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    // }
+    // if(Controller.ButtonDown.pressing()){
+    //   downBtnFlag = true;
+    //   if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    // }
+    // if(Controller.ButtonLeft.pressing()){
+    //   leftBtnFlag = true;
+    //   if(directionalButtonCooldown < 0) directionalButtonCooldown = 0;
+    // }
+
     if(Controller.ButtonY.pressing()){
       if(bButtonCooldown >= 0) yBtnFlag = true;
     }
