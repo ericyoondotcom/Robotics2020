@@ -350,6 +350,14 @@ void preDriver(){
 
 int odometryTaskCallback(){
   while(true){
+
+#if !DEBUG
+  if(!Competition.isAutonomous()){
+    vex::this_thread::sleep_for(CYCLE_TIME);
+    continue;
+  }
+#endif
+
     // Odometry algorithm was super helpfully explained by Team 5225 PiLons. Thanks!
 
     float encLNew = -EncoderL.rotation(rotationUnits::rev) * M_PI * 2;
@@ -765,12 +773,21 @@ void pre_auton(void) {
 
 
 void matchAutonomous(void){
+
+  EncoderL.resetRotation();
+  EncoderR.resetRotation();
+  EncoderB.resetRotation();
+
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
 }
 
 void liveRemoteAutonomous(void){
+
+  EncoderL.resetRotation();
+  EncoderR.resetRotation();
+  EncoderB.resetRotation();
 
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
@@ -832,6 +849,11 @@ void liveRemoteAutonomous(void){
 }
 
 void skillsAutonomous(void) {
+
+  EncoderL.resetRotation();
+  EncoderR.resetRotation();
+  EncoderB.resetRotation();
+
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
