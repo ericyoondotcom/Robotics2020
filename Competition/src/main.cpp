@@ -6,7 +6,8 @@
 using namespace vex;
 
 // ************
-#define DEBUG true
+#define DEBUG false
+#define AUTON_NOT_PRELOADED true
 #define SKILLS false
 #define LIVE_REMOTE true
 #define RED_TEAM true
@@ -27,7 +28,7 @@ using namespace vex;
 #define ROLLER_UNSTUCK_SPEED 80
 #define INTAKE_SPEED_FWD 80
 #define INTAKE_SPEED_REV 80
-#define INTAKE_OPEN_POS 100
+#define INTAKE_OPEN_POS 70
 
 #define MACROS_ORTHOGONAL_SPEED 75
 
@@ -302,6 +303,38 @@ void stopRollers(){
   RollerF.stop();
   RollerB.stop();
 }
+
+directionType _ra_direction;
+float _ra_revolutions;
+float _ra_speed;
+float _ra_timeout;
+int spinRollersForCallback(){
+  float t = 0;
+  if(_ra_direction == directionType::fwd){
+    RollerF.startRotateFor(directionType::fwd, _ra_revolutions, rotationUnits::rev, _ra_speed, velocityUnits::pct);
+    RollerB.startRotateFor(directionType::rev, _ra_revolutions, rotationUnits::rev, _ra_speed, velocityUnits::pct);
+  }else if(_ra_direction == directionType::rev){
+    RollerF.startRotateFor(directionType::fwd, _ra_revolutions, rotationUnits::rev, _ra_speed, velocityUnits::pct);
+    RollerB.startRotateFor(directionType::fwd, _ra_revolutions, rotationUnits::rev, _ra_speed, velocityUnits::pct);
+  }
+  while(t < _ra_timeout && !RollerF.isDone() && !RollerB.isDone()){
+    t += CYCLE_TIME;
+    vex::this_thread::sleep_for(CYCLE_TIME);
+  }
+  return 0;
+}
+
+thread spinRollersForAsync(directionType direction, float revolutions, float speed = 0, float timeout = 3000){
+  _ra_direction = direction;
+  _ra_revolutions = revolutions;
+  if(speed == 0){
+    _ra_speed = direction == directionType::fwd ? ROLLER_SPEED_FWD : ROLLER_SPEED_REV;
+  }else{
+    _ra_speed = speed;
+  }
+  _ra_timeout = timeout;
+  return thread(spinRollersForCallback);
+}
   
 void onIntakePressed(){
   intakePulse = INTAKE_PULSE_TIME;
@@ -319,7 +352,7 @@ int odometryTaskCallback(){
   while(true){
     // Odometry algorithm was super helpfully explained by Team 5225 PiLons. Thanks!
 
-    float encLNew = -1 * EncoderL.rotation(rotationUnits::rev) * M_PI * 2;
+    float encLNew = -EncoderL.rotation(rotationUnits::rev) * M_PI * 2;
     float encRNew = EncoderR.rotation(rotationUnits::rev) * M_PI * 2;
     float encBNew = EncoderB.rotation(rotationUnits::rev) * M_PI * 2;
     
@@ -402,7 +435,7 @@ const float ROT_KP = 2.0f; // Remember: number must scale up to 100, but its in 
 const float ROT_KD = 0;
 float ERROR_THRESHOLD_XY = 1 * sqrt(2); // 1 inches in both directions allowed
 float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
-void smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
+int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
   float errorXY = infinityf();
   float errorRot = infinityf();
   float rot = rotDeg * M_PI / 180;
@@ -497,10 +530,10 @@ void smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRota
     vex::this_thread::sleep_for(20);
 
     if(t >= timeout){
-      return;
+      return 0;
     }
   }
-    
+  return 0;
 }
 
 void usercontrol(void) {
@@ -743,48 +776,50 @@ void liveRemoteAutonomous(void){
     vex::this_thread::sleep_for(20);
   }
 
-  // Same setup as for skills. preload needs to start 2 inches below the hood
+  thread rollerThread;
+
+  // Same setup as for skills. preload needs to start in the triangle between the back rollers and the bottom front roller
   spinIntakes(directionType::rev);
-  
+#if AUTON_NOT_PRELOADED
+  vex::this_thread::sleep_for(500);
+#endif
   smartmove(25.7, 27.7, 180 + 45, 5000, true, 5, 80, 10, 65);
 
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
 
-  vex::this_thread::sleep_for(250);
+  vex::this_thread::sleep_for(150);
 
   smartmove(21.5, 21.5, 0, 900, false);
   vex::this_thread::sleep_for(300);
 
   // On left tower
-  spinRollers(fwd);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2.7);
   stopIntakes();
-  smartmove(17.5, 17.5, 0, 500, false);
+
+  smartmove(17.5, 18, 0, 500, false);
   spinIntakes(directionType::rev);
+  rollerThread.join();
 
-  stopRollers();
-
+  rollerThread = spinRollersForAsync(directionType::rev, 1);
   smartmove(26, 24.5, 180);
-  
-  // spinRollers(directionType::rev);
-  // vex::this_thread::sleep_for(400);
-  // stopRollers();
+  rollerThread.join();
+
 
   // Move left towards center tower
-  smartmove(26, 70.7, 180);
-  spinRollers(fwd);
+  smartmove(27, 70.7, 180);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2.7);
   smartmove(21.5, 70.7, 180, 1000);
-  vex::this_thread::sleep_for(700);
-  stopRollers();
+  rollerThread.join();
   
   smartmove(30, 70.7, 180);
   
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(17, 114, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(18, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(fwd);
-  vex::this_thread::sleep_for(300);
+  vex::this_thread::sleep_for(400);
   smartmove(3, 119, 90 + 45, 600);
   vex::this_thread::sleep_for(300);
   stopIntakes();
