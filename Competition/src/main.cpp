@@ -795,7 +795,7 @@ void liveRemoteAutonomous(void){
 
   thread rollerThread;
 
-  // Same setup as for skills. preload needs to start 3 inches below the hood
+  // Same setup as for skills. preload needs to start between the bottom front roller and the top back roller
   spinIntakes(directionType::rev);
 #if AUTON_NOT_PRELOADED
   vex::this_thread::sleep_for(500);
@@ -824,7 +824,7 @@ void liveRemoteAutonomous(void){
 
 
   // Move left towards center tower
-  smartmove(27, 70.7, 180);
+  smartmove(27, 72, 180);
   rollerThread = spinRollersForAsync(directionType::fwd, 2.7);
   smartmove(21.5, 70.7, 180, 1000);
   rollerThread.join();
@@ -833,7 +833,7 @@ void liveRemoteAutonomous(void){
   
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(18, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(17, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(fwd);
   vex::this_thread::sleep_for(300);
