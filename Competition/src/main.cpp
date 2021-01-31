@@ -7,7 +7,7 @@ using namespace vex;
 
 // ************
 #define DEBUG false
-#define AUTON_NOT_PRELOADED true // Set to true if you're too lazy to tie back the arms for auton
+#define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS false
 #define LIVE_REMOTE true
 #define RED_TEAM true
@@ -818,22 +818,22 @@ void liveRemoteAutonomous(void){
   spinIntakes(directionType::rev);
   rollerThread.join();
 
-  RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
-  RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerF.startRotateFor(directionType::rev, 1, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerB.startRotateFor(directionType::fwd, 1, rotationUnits::rev, 100, velocityUnits::pct);
   smartmove(26, 24.5, 180);
 
 
   // Move left towards center tower
-  smartmove(27, 72, 180);
-  rollerThread = spinRollersForAsync(directionType::fwd, 2.7);
-  smartmove(21.5, 70.7, 180, 1000);
+  smartmove(30, 70, 180);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
+  smartmove(23.5, 70, 180, 1000);
   rollerThread.join();
   
-  smartmove(30, 70.7, 180);
+  smartmove(34, 70, 180);
   
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(17, 112, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(22, 110, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(fwd);
   vex::this_thread::sleep_for(300);
