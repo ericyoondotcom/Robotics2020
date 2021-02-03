@@ -7,8 +7,8 @@ using namespace vex;
 
 // ************
 #define DEBUG false
-#define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
-#define SKILLS false
+#define AUTON_NOT_PRELOADED true // Set to true if you're too lazy to tie back the arms for auton
+#define SKILLS true
 #define LIVE_REMOTE true
 #define RED_TEAM true
 #define LEFT_SIDE_AUTON true
@@ -857,92 +857,63 @@ void skillsAutonomous(void) {
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
-  // AT START:
-  // The robot should be aligned so it is centered with the ball on the field towards the left.
-  // The preload should be pushed up so it's touching the top back roller and the tiny front roller.
 
-  // Move from wall to tower and rotate
-  spinIntakes(fwd);
-  moveCardinal(cardinal::forward, 12);
-  vex::this_thread::sleep_for(300);
-  stopIntakes();
-  turnToAngle(270, 75);
-  moveCardinal(cardinal::forward, 16);
-  turnToAngle(180 + 45, 50);
-  spinIntakes(fwd);
-  moveCardinal(cardinal::forward, 8, 1000);
-  // robot is on Red Left Tower
-  spinRollers(fwd);
-  spinIntakes(fwd);
-  vex::this_thread::sleep_for(700);
-  stopRollers();
-  stopIntakes();
-  RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
-  vex::this_thread::sleep_for(500);
-  stopRollers();
-  spinIntakes(fwd);
-  moveCardinal(cardinal::reverse, 10);
+  thread rollerThread;
+
+#if AUTON_NOT_PRELOADED
   spinIntakes(directionType::rev);
-  moveCardinal(cardinal::reverse, 7);
-  turnToAngle(180, 75);
-  // Move the red ball up, and release a blue ball
-  // spinRollers(directionType::fwd);
-  // vex::this_thread::sleep_for(400);
-  // spinRollers(directionType::rev);
-  // vex::this_thread::sleep_for(600);
-  RollerF.spin(directionType::rev, ROLLER_UNSTUCK_SPEED, velocityUnits::pct);
-  vex::this_thread::sleep_for(100);
-  stopRollers();
-  moveCardinal(cardinal::left, 42);
-  moveCardinal(cardinal::forward, 13, 35, 1000); // Intentionally go too far— it's to square up the robot
-  // robot is on Red Center Tower
-  spinRollers(fwd);
-  spinIntakes(fwd);
-  vex::this_thread::sleep_for(1200);
-  stopRollers();
-  moveCardinal(cardinal::reverse, 5);
-  // Now off the center tower
-  turnToAngle(90, 50);
-  spinRollers(directionType::rev);
   vex::this_thread::sleep_for(1000);
-  spinIntakes(directionType::rev);
-  moveCardinal(cardinal::forward, 30);
-  spinIntakes(directionType::fwd);
-  stopRollers();
-  // at this point the robot is picking up a field ball
-  moveCardinal(cardinal::forward, 19);
-  stopIntakes();
-  stopRollers();
-  turnToAngle(90 + 45 + 5, 47); // Drift correction
-  spinIntakes(fwd);
+#endif
+
+  // Preload needs to start between the bottom front roller and the top back roller
+  IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
+  IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
+  // moveCardinal(cardinal::forward, 7, 15, 1000);
+
+  vex::this_thread::sleep_for(100);
   
-  // spin rollers a bit just to get red one so its not blocking blues
-  spinRollers(fwd);
-  spinIntakes(fwd);
-  vex::this_thread::sleep_for(600);
-  stopRollers();
-  moveCardinal(cardinal::forward, 19, 35, 2000);
-  // robot is on Red Right Tower
-  spinRollers(fwd);
-  vex::this_thread::sleep_for(900);
-  stopRollers();
-  moveCardinal(cardinal::reverse, 15);
-  spinRollers(directionType::rev);
-  turnToAngle(270 + 45 + 5, 75);
+  rollerThread = spinRollersForAsync(directionType::fwd, 0.5);
+  smartmove(25.7, 27.7, 180 + 45, 5000, true, 5, 80, 10, 65);
+  smartmove(21.5, 20.5, 0, 900, false);
+  vex::this_thread::sleep_for(300);
+
+  // On left tower
+  rollerThread = spinRollersForAsync(directionType::fwd, 2.4);
   stopIntakes();
-  moveCardinal(cardinal::forward, 34);
-  turnToAngle(0 + 5, 50);
-  // Moving left towards true mid tower
-  moveCardinal(cardinal::left, 19);
+
+  smartmove(17.5, 18, 0, 500, false);
+  spinIntakes(directionType::rev);
+  rollerThread.join();
+
+  RollerF.startRotateFor(directionType::rev, 1, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerB.startRotateFor(directionType::fwd, 1, rotationUnits::rev, 100, velocityUnits::pct);
+  smartmove(26, 24.5, 180);
+
+  // Move left towards center tower
+  smartmove(30, 70, 180);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
+  smartmove(23.5, 70, 180, 1000);
+  rollerThread.join();
+  smartmove(34, 70, 180);
+  
+  IntakeL.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+  // Approach ball on the field
+  smartmove(24, 87.5, 90);
+  spinIntakes(directionType::fwd);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1);
+
+  // Start facing right tower
+  // These values are not "correct"; however they are manually adjusted for predictable drift
+  smartmove(22, 110, 90 + 45, 10000, true, 6, 90, 10, 65);
+  spinRollers(directionType::fwd);
+  spinIntakes(directionType::rev);
+  smartmove(3, 119, 90 + 45, 600);
+  vex::this_thread::sleep_for(1200);
+  smartmove(12, 110, 90 + 45);
+  stopIntakes();
   stopRollers();
-  turnToAngle(0 + 9, 50);
-  moveCardinal(cardinal::forward, 5, 60, 1000);
-  for(int i = 0; i < 3; i++){
-    // moveCardinal(cardinal::forward, 6);
-    // moveCardinal(cardinal::reverse, 6);
-    moveCardinal(cardinal::forward, 9, 40, 1000);
-    moveCardinal(cardinal::reverse, 7, 40, 1000);
-  }
+
 }
 
 int main() {
