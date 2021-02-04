@@ -6,7 +6,7 @@
 using namespace vex;
 
 // ************
-#define DEBUG false
+#define DEBUG true
 #define AUTON_NOT_PRELOADED true // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS true
 #define LIVE_REMOTE true
@@ -868,9 +868,9 @@ void skillsAutonomous(void) {
   // Preload needs to start between the bottom front roller and the top back roller
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
-  // moveCardinal(cardinal::forward, 7, 15, 1000);
+  smartmove(7, 35.5, 0);
 
-  vex::this_thread::sleep_for(100);
+  vex::this_thread::sleep_for(500);
   
   rollerThread = spinRollersForAsync(directionType::fwd, 0.5);
   smartmove(25.7, 27.7, 180 + 45, 5000, true, 5, 80, 10, 65);
@@ -878,7 +878,7 @@ void skillsAutonomous(void) {
   vex::this_thread::sleep_for(300);
 
   // On left tower
-  rollerThread = spinRollersForAsync(directionType::fwd, 2.4);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.7);
   stopIntakes();
 
   smartmove(17.5, 18, 0, 500, false);
@@ -890,29 +890,54 @@ void skillsAutonomous(void) {
   smartmove(26, 24.5, 180);
 
   // Move left towards center tower
-  smartmove(30, 70, 180);
+  smartmove(30.5, 70, 180);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
-  smartmove(23.5, 70, 180, 1000);
+  smartmove(23, 70, 180, 1000);
   rollerThread.join();
   smartmove(34, 70, 180);
   
-  IntakeL.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+  smartmove(24, 80, 90, 7000, true, 5, 80, 10, 75);
   // Approach ball on the field
-  smartmove(24, 87.5, 90);
+  smartmove(22, 87.5, 90);
   spinIntakes(directionType::fwd);
-  rollerThread = spinRollersForAsync(directionType::fwd, 1);
+  vex::this_thread::sleep_for(1000);
+  rollerThread = spinRollersForAsync(directionType::fwd, .5);
+  rollerThread.join();
+  spinIntakes(directionType::rev);
 
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
   smartmove(22, 110, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
-  spinIntakes(directionType::rev);
-  smartmove(3, 119, 90 + 45, 600);
+  // smartmove(3, 119, 90 + 45, 600);
+  smartmove(11, 119, 90 + 45, 600);
   vex::this_thread::sleep_for(1200);
-  smartmove(12, 110, 90 + 45);
+  smartmove(22, 110, 90 + 45);
   stopIntakes();
   stopRollers();
+
+  smartmove(22, 110, 90 + 45, 5000, false);
+  // spin first, move 2nd
+  spinIntakes(directionType::fwd);
+  smartmove(22, 110, 0);
+  IntakeL.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
+  smartmove(46, 120, 0);
+
+  spinIntakes(directionType::fwd);
+  vex::this_thread::sleep_for(700);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.4);
+  rollerThread.join();
+  spinIntakes(directionType::rev);
+  
+
+  // Approach neutral right
+  // turn first...
+  smartmove(46, 120, 90);
+  Controller.rumble(".");
+  smartmove(49, 120, 90, 1000, false);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2.5);
+  rollerThread.join();
 
 }
 
