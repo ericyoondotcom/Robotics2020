@@ -6,7 +6,7 @@
 using namespace vex;
 
 // ************
-#define DEBUG true
+#define DEBUG false
 #define AUTON_NOT_PRELOADED true // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS true
 #define LIVE_REMOTE true
@@ -427,8 +427,8 @@ int odometryTaskCallback(){
 
 #if DEBUG
     if(Controller.ButtonY.pressing()){
-      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
-      // std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
+      // std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+      std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
     }
 #endif
     vex::this_thread::sleep_for(CYCLE_TIME);
@@ -534,8 +534,8 @@ int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotat
     }
 #endif
 
-    t += 20;
-    vex::this_thread::sleep_for(20);
+    t += 10;
+    vex::this_thread::sleep_for(10);
 
     if(t >= timeout){
       return 0;
@@ -906,11 +906,10 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
 
   // Start facing right tower
-  // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(22, 110, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(22, 108, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
-  // smartmove(3, 119, 90 + 45, 600);
-  smartmove(11, 119, 90 + 45, 600);
+  // Try (29.2, 121) ?
+  smartmove(13, 117, 90 + 45, 600);
   vex::this_thread::sleep_for(1200);
   smartmove(22, 110, 90 + 45);
   stopIntakes();
@@ -920,9 +919,9 @@ void skillsAutonomous(void) {
   // spin first, move 2nd
   spinIntakes(directionType::fwd);
   smartmove(22, 110, 0);
-  IntakeL.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg);
-  smartmove(46, 120, 0);
+  IntakeL.startSpinFor(directionType::rev, 20, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, 20, rotationUnits::deg);
+  smartmove(46, 116, 0);
 
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(700);
@@ -932,13 +931,31 @@ void skillsAutonomous(void) {
   
 
   // Approach neutral right
-  // turn first...
-  smartmove(46, 120, 90);
-  Controller.rumble(".");
-  smartmove(49, 120, 90, 1000, false);
+  // Need to move left a tiny bit so it doesn't bump into tower (110 instead of 120)
+  smartmove(60, 112, 0, 5000, false);
+  turnToAngle(90, 85);
+  smartmove(63, 115, 90, 100, false);
   rollerThread = spinRollersForAsync(directionType::fwd, 2.5);
   rollerThread.join();
 
+  // Grab ball for center tower
+  smartmove(65, 109, 90, 1000, false);
+  turnToAngle(270, 85);
+  // smartmove(65, 109, 270);
+  spinIntakes(directionType::fwd);
+  smartmove(65, 104, 270);
+  vex::this_thread::sleep_for(300);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1);
+  rollerThread.join();
+
+  // Poke ball out of center tower
+  smartmove(67, 83, 270, 800);
+  // Retreat
+  smartmove(65, 104, 270);
+  spinIntakes(directionType::rev);
+  smartmove(63, 83, 270, 800);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3.5);
+  rollerThread.join();
 }
 
 int main() {
