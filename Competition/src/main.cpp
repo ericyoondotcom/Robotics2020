@@ -538,9 +538,13 @@ int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotat
     vex::this_thread::sleep_for(10);
 
     if(t >= timeout){
-      return 0;
+      break;
     }
   }
+  MotorA.stop();
+  MotorB.stop();
+  MotorC.stop();
+  MotorD.stop();
   return 0;
 }
 
@@ -878,7 +882,7 @@ void skillsAutonomous(void) {
   vex::this_thread::sleep_for(300);
 
   // On left tower
-  rollerThread = spinRollersForAsync(directionType::fwd, 1.7);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.9);
   stopIntakes();
 
   smartmove(17.5, 18, 0, 500, false);
@@ -892,68 +896,73 @@ void skillsAutonomous(void) {
   // Move left towards center tower
   smartmove(30.5, 70, 180);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
-  smartmove(23, 70, 180, 1000);
+  smartmove(22, 70, 180, 1000);
   rollerThread.join();
   smartmove(34, 70, 180);
   
   smartmove(24, 80, 90, 7000, true, 5, 80, 10, 75);
   // Approach ball on the field
-  smartmove(22, 87.5, 90);
+  smartmove(20, 87.5, 90);
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(1000);
-  rollerThread = spinRollersForAsync(directionType::fwd, .5);
+  rollerThread = spinRollersForAsync(directionType::fwd, .7);
   rollerThread.join();
   spinIntakes(directionType::rev);
 
   // Start facing right tower
   smartmove(22, 108, 90 + 45, 10000, true, 6, 90, 10, 65);
-  spinRollers(directionType::fwd);
-  // Try (29.2, 121) ?
-  smartmove(13, 117, 90 + 45, 600);
-  vex::this_thread::sleep_for(1200);
+  // used to be (12, 118)
+  smartmove(10.5, 119.5, 90 + 45, 600);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3.2);
+  rollerThread.join();
   smartmove(22, 110, 90 + 45);
   stopIntakes();
-  stopRollers();
 
   smartmove(22, 110, 90 + 45, 5000, false);
   // spin first, move 2nd
   spinIntakes(directionType::fwd);
   smartmove(22, 110, 0);
-  IntakeL.startSpinFor(directionType::rev, 20, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, 20, rotationUnits::deg);
-  smartmove(46, 116, 0);
+  IntakeL.startSpinFor(directionType::rev, 30, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, 30, rotationUnits::deg);
+  smartmove(45, 116, 0);
 
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(700);
-  rollerThread = spinRollersForAsync(directionType::fwd, 1.4);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.8);
   rollerThread.join();
-  spinIntakes(directionType::rev);
   
 
   // Approach neutral right
-  // Need to move left a tiny bit so it doesn't bump into tower (110 instead of 120)
-  smartmove(60, 112, 0, 5000, false);
+  // Need to move foward/left a tiny bit so it doesn't bump into tower (110 instead of 120)
+  smartmove(58, 112, 0, 5000, false);
   turnToAngle(90, 85);
-  smartmove(63, 115, 90, 100, false);
-  rollerThread = spinRollersForAsync(directionType::fwd, 2.5);
+  // Dont want to hit left red ball... also bonus if we "accidentally" descore 1 blue!
+  spinIntakes(directionType::rev);
+  smartmove(59, 122, 90, 1000, false);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3.14);
   rollerThread.join();
 
   // Grab ball for center tower
-  smartmove(65, 109, 90, 1000, false);
+  smartmove(67, 107, 90, 1000, false);
   turnToAngle(270, 85);
   // smartmove(65, 109, 270);
   spinIntakes(directionType::fwd);
-  smartmove(65, 104, 270);
+  smartmove(65, 102.5, 270, 750);
   vex::this_thread::sleep_for(300);
-  rollerThread = spinRollersForAsync(directionType::fwd, 1);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.3);
   rollerThread.join();
 
-  // Poke ball out of center tower
-  smartmove(67, 83, 270, 800);
+  // Poke ball out of center tower (with right(?) arm)
+  smartmove(72, 102.5, 270, 800);
+  moveCardinal(cardinal::forward, 11);
   // Retreat
-  smartmove(65, 104, 270);
+  moveCardinal(cardinal::reverse, 11);
   spinIntakes(directionType::rev);
-  smartmove(63, 83, 270, 800);
+  vex::this_thread::sleep_for(300);
+  rollerThread = spinRollersForAsync(directionType::rev, .4);
+  rollerThread.join();
+  smartmove(67, 104, 270);
+  smartmove(67, 85, 270, 800);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.5);
   rollerThread.join();
 }
