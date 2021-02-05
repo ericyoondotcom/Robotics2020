@@ -7,7 +7,7 @@ using namespace vex;
 
 // ************
 #define DEBUG false
-#define AUTON_NOT_PRELOADED true // Set to true if you're too lazy to tie back the arms for auton
+#define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS true
 #define LIVE_REMOTE true
 #define RED_TEAM true
@@ -427,8 +427,8 @@ int odometryTaskCallback(){
 
 #if DEBUG
     if(Controller.ButtonY.pressing()){
-      // std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
-      std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
+      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+      // std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
     }
 #endif
     vex::this_thread::sleep_for(CYCLE_TIME);
@@ -882,7 +882,7 @@ void skillsAutonomous(void) {
   vex::this_thread::sleep_for(300);
 
   // On left tower
-  rollerThread = spinRollersForAsync(directionType::fwd, 1.9);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.5);
   stopIntakes();
 
   smartmove(17.5, 18, 0, 500, false);
@@ -938,7 +938,7 @@ void skillsAutonomous(void) {
   turnToAngle(90, 85);
   // Dont want to hit left red ball... also bonus if we "accidentally" descore 1 blue!
   spinIntakes(directionType::rev);
-  smartmove(59, 122, 90, 1000, false);
+  smartmove(59, 121, 90, 1000, false);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.14);
   rollerThread.join();
 
@@ -947,7 +947,7 @@ void skillsAutonomous(void) {
   turnToAngle(270, 85);
   // smartmove(65, 109, 270);
   spinIntakes(directionType::fwd);
-  smartmove(65, 102.5, 270, 750);
+  smartmove(65, 102, 270, 750);
   vex::this_thread::sleep_for(300);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.3);
   rollerThread.join();
@@ -962,9 +962,31 @@ void skillsAutonomous(void) {
   rollerThread = spinRollersForAsync(directionType::rev, .4);
   rollerThread.join();
   smartmove(67, 104, 270);
-  smartmove(67, 85, 270, 800);
+  smartmove(67, 86, 270, 800);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.5);
   rollerThread.join();
+
+
+  // Back up
+  smartmove(67, 113, 270);
+  spinIntakes(directionType::fwd);
+  turnToAngle(0, 85);
+  IntakeL.startSpinFor(directionType::rev, 40, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, 40, rotationUnits::deg);
+
+  // Go for ball on blue side of field
+  smartmove(97, 107, 0);
+  spinIntakes(directionType::fwd);
+  vex::this_thread::sleep_for(1000);
+  rollerThread = spinRollersForAsync(directionType::rev, .4);
+  rollerThread.join();
+  spinIntakes(directionType::rev);
+
+  // Go to blue right tower
+  smartmove(117, 125, 45, 3000);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3);
+  rollerThread.join();
+  smartmove(107, 117, 45);
 }
 
 int main() {
