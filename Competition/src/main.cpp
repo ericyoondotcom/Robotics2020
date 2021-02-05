@@ -922,9 +922,21 @@ void skillsAutonomous(void) {
   // spin first, move 2nd
   spinIntakes(directionType::fwd);
   smartmove(22, 110, 0);
+
+  /*
+  // Move backwards to the wall to square up odometry
+  moveCardinal(cardinal::reverse, 24, 30, 2000);
+  posX = -3; // Adjust manually for drift
+  Gyro.resetHeading();
+  currRot = 0;
+  */
+
+  // At this point, the odometry drifts too much in the poositive X directioon. Manual adjustment
+  posX -= 1; 
+  
   IntakeL.startSpinFor(directionType::rev, 30, rotationUnits::deg);
   IntakeR.startSpinFor(directionType::rev, 30, rotationUnits::deg);
-  smartmove(45, 116, 0);
+  smartmove(47, 116, 0);
 
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(700);
@@ -943,7 +955,7 @@ void skillsAutonomous(void) {
   rollerThread.join();
 
   // Grab ball for center tower
-  smartmove(67, 107, 90, 1000, false);
+  smartmove(67, 105, 90, 1000, false);
   turnToAngle(270, 85);
   // smartmove(65, 109, 270);
   spinIntakes(directionType::fwd);
@@ -953,7 +965,8 @@ void skillsAutonomous(void) {
   rollerThread.join();
 
   // Poke ball out of center tower (with right(?) arm)
-  smartmove(72, 102.5, 270, 800);
+  smartmove(70.5, 102.5, 270, 800);
+  stopIntakes();
   moveCardinal(cardinal::forward, 11);
   // Retreat
   moveCardinal(cardinal::reverse, 11);
@@ -975,7 +988,7 @@ void skillsAutonomous(void) {
   IntakeR.startSpinFor(directionType::rev, 40, rotationUnits::deg);
 
   // Go for ball on blue side of field
-  smartmove(97, 107, 0);
+  smartmove(96, 107, 0);
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(1000);
   rollerThread = spinRollersForAsync(directionType::rev, .4);
