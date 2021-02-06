@@ -8,7 +8,7 @@ using namespace vex;
 // ************
 #define DEBUG false
 #define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
-#define SKILLS false
+#define SKILLS true
 #define LIVE_REMOTE true
 #define RED_TEAM true
 #define LEFT_SIDE_AUTON true
@@ -995,7 +995,7 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
 
   // Go to blue right tower
-  smartmove(123, 117, 45, 2000);
+  smartmove(125, 116, 45, 2000);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
   smartmove(117, 107, 45);
@@ -1003,14 +1003,13 @@ void skillsAutonomous(void) {
   // Grab ball on side of wall
   smartmove(117, 102, 90);
   smartmove(134, 102, 90, 800);
-  rollerThread = spinRollersForAsync(directionType::fwd, 1);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2);
   rollerThread.join();
 
   // Approach blue mid
-  smartmove(75, 102, 0);
-  rollerThread = spinRollersForAsync(directionType::fwd, 3.2);
-  // It's at (75, 110), but overshoot just in case
-  smartmove(73, 115, 0, 1100);
+  smartmove(74, 98, 0);
+  rollerThread = spinRollersForAsync(directionType::fwd, 4);
+  smartmove(74, 110, 0, 1100);
   rollerThread.join();
 
   // Back up
