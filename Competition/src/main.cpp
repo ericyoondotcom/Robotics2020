@@ -889,8 +889,8 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
   rollerThread.join();
 
-  RollerF.startRotateFor(directionType::rev, 1, rotationUnits::rev, 100, velocityUnits::pct);
-  RollerB.startRotateFor(directionType::fwd, 1, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
   smartmove(26, 24.5, 180);
 
   // Move left towards center tower
@@ -931,8 +931,8 @@ void skillsAutonomous(void) {
   currRot = 0;
   */
 
-  // At this point, the odometry drifts too much in the poositive X directioon. Manual adjustment
-  posX -= 1; 
+  // At this point, the odometry drifts. Manual adjustment
+  // posX -= 1; 
   
   IntakeL.startSpinFor(directionType::rev, 30, rotationUnits::deg);
   IntakeR.startSpinFor(directionType::rev, 30, rotationUnits::deg);
@@ -955,7 +955,7 @@ void skillsAutonomous(void) {
   rollerThread.join();
 
   // Grab ball for center tower
-  smartmove(67, 105, 90, 1000, false);
+  smartmove(67, 106.5, 90, 1000, false);
   turnToAngle(270, 85);
   // smartmove(65, 109, 270);
   spinIntakes(directionType::fwd);
@@ -964,12 +964,15 @@ void skillsAutonomous(void) {
   rollerThread = spinRollersForAsync(directionType::fwd, 1.3);
   rollerThread.join();
 
-  // Poke ball out of center tower (with right(?) arm)
+  // Poke ball out of center tower (with left arm)
   smartmove(70.5, 102.5, 270, 800);
   stopIntakes();
-  moveCardinal(cardinal::forward, 11);
+  smartmove(70.5, 88, 270, 900);
+  smartmove(70.5, 102, 270, 900);
+  // Try again just in case
+  smartmove(68.5, 88, 270, 900);
+  smartmove(68.5, 102, 270, 900);
   // Retreat
-  moveCardinal(cardinal::reverse, 11);
   spinIntakes(directionType::rev);
   vex::this_thread::sleep_for(300);
   rollerThread = spinRollersForAsync(directionType::rev, .4);
@@ -988,7 +991,7 @@ void skillsAutonomous(void) {
   IntakeR.startSpinFor(directionType::rev, 40, rotationUnits::deg);
 
   // Go for ball on blue side of field
-  smartmove(96, 107, 0);
+  smartmove(95, 108.5, 0);
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(1000);
   rollerThread = spinRollersForAsync(directionType::rev, .4);
@@ -996,10 +999,27 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
 
   // Go to blue right tower
-  smartmove(117, 125, 45, 3000);
+  smartmove(117, 123, 45, 2000);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
   smartmove(107, 117, 45);
+
+  // Grab ball on side of wall
+  smartmove(102, 117, 90);
+  smartmove(102, 134, 90, 800);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1);
+  rollerThread.join();
+
+  // Approach blue mid
+  smartmove(102, 75, 0);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3.2);
+  // It's at (110, 75), but overshoot just in case
+  smartmove(115, 73, 0, 1100);
+  rollerThread.join();
+
+  // Back up
+  smartmove(98, 75, 0);
+
 }
 
 int main() {
