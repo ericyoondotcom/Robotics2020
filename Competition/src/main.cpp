@@ -1009,7 +1009,7 @@ void skillsAutonomous(void) {
   // Approach blue mid
   smartmove(74, 98, 0);
   rollerThread = spinRollersForAsync(directionType::fwd, 4);
-  smartmove(74, 110, 0, 1100);
+  smartmove(74, 111, 0, 1100);
   rollerThread.join();
 
   // Back up
