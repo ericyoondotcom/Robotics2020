@@ -807,21 +807,21 @@ void liveRemoteAutonomous(void){
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
 
-  vex::this_thread::sleep_for(150);
+  vex::this_thread::sleep_for(250);
 
   smartmove(20.5, 21.5, 0, 900, false);
   vex::this_thread::sleep_for(300);
 
   // On left tower
-  rollerThread = spinRollersForAsync(directionType::fwd, 2.4);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.5);
   stopIntakes();
 
   smartmove(18, 17.5, 0, 500, false);
   spinIntakes(directionType::rev);
   rollerThread.join();
 
-  RollerF.startRotateFor(directionType::rev, 1, rotationUnits::rev, 100, velocityUnits::pct);
-  RollerB.startRotateFor(directionType::fwd, 1, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
+  RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
   smartmove(24.5, 26, 180);
 
 
