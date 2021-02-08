@@ -8,7 +8,7 @@ using namespace vex;
 // ************
 #define DEBUG false
 #define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
-#define SKILLS true
+#define SKILLS false
 #define LIVE_REMOTE true
 #define RED_TEAM true
 #define LEFT_SIDE_AUTON true
@@ -24,9 +24,11 @@ using namespace vex;
 #define ROLLER_SPEED_FWD 100
 #define ROLLER_SPEED_REV 80
 #define ROLLER_UNSTUCK_SPEED 80
-#define INTAKE_SPEED_FWD 80
+#define INTAKE_SPEED_FWD 100
+#define INTAKE_SPEED_FWD_AUTON 80
 #define INTAKE_SPEED_REV 80
-#define INTAKE_OPEN_POS 70
+#define INTAKE_OPEN_POS 80
+
 
 #define MACROS_ORTHOGONAL_SPEED 75
 
@@ -274,8 +276,8 @@ void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = t
 
 void spinIntakes(directionType direction){
   if(direction == directionType::fwd){
-    IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
-    IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD, velocityUnits::pct);
+    IntakeL.spin(directionType::fwd, INTAKE_SPEED_FWD_AUTON, velocityUnits::pct);
+    IntakeR.spin(directionType::fwd, INTAKE_SPEED_FWD_AUTON, velocityUnits::pct);
   }else if(direction == directionType::rev){
     IntakeL.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
     IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
@@ -850,8 +852,8 @@ void liveRemoteAutonomous(void){
   stopRollers();
 }
 
+#define SKILLS_INTAKE_OPEN_POSITION 70
 void skillsAutonomous(void) {
-
   EncoderL.resetRotation();
   EncoderR.resetRotation();
   EncoderB.resetRotation();
@@ -930,8 +932,8 @@ void skillsAutonomous(void) {
   // At this point, the odometry drifts. Manual adjustment
   // posX -= 1; 
   
-  IntakeL.startSpinFor(directionType::rev, 30, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, 30, rotationUnits::deg);
+  IntakeL.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
   smartmove(116, 47, 0);
 
   spinIntakes(directionType::fwd);
@@ -983,8 +985,8 @@ void skillsAutonomous(void) {
   smartmove(113, 67, 270);
   spinIntakes(directionType::fwd);
   turnToAngle(0, 85);
-  IntakeL.startSpinFor(directionType::rev, 40, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, 40, rotationUnits::deg);
+  IntakeL.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
 
   // Go for ball on blue side of field
   smartmove(108.5, 95, 0);
