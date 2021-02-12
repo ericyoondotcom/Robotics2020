@@ -28,7 +28,7 @@ using namespace vex;
 #define INTAKE_SPEED_FWD_AUTON 80
 #define INTAKE_SPEED_REV 80
 #define INTAKE_OPEN_POS 80
-
+#define AUTON_INTAKE_OPEN_POSITION 70
 
 #define MACROS_ORTHOGONAL_SPEED 75
 
@@ -809,7 +809,7 @@ void liveRemoteAutonomous(void){
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
 
-  vex::this_thread::sleep_for(250);
+  vex::this_thread::sleep_for(500);
 
   smartmove(20.5, 21.5, 0, 900, false);
   vex::this_thread::sleep_for(300);
@@ -819,29 +819,27 @@ void liveRemoteAutonomous(void){
   stopIntakes();
 
   smartmove(18, 17.5, 0, 500, false);
-  spinIntakes(directionType::rev);
+  // spinIntakes(directionType::rev);
   rollerThread.join();
 
-  RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
-  RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
   smartmove(24.5, 26, 180);
-
+  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION, rotationUnits::deg);
 
   // Move right towards center tower
   smartmove(70, 30, 180);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
-  smartmove(70, 23.5, 180, 1000);
+  smartmove(70, 22, 180, 1000);
   rollerThread.join();
   
   smartmove(70, 34, 180);
   
   // Start facing right tower
   // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(110, 22, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(108, 21, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
-  spinIntakes(fwd);
-  vex::this_thread::sleep_for(300);
-  smartmove(119, 3, 90 + 45, 600);
+  spinIntakes(directionType::fwd);
+  smartmove(119.5, 10.5, 90 + 45, 600);
   vex::this_thread::sleep_for(300);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
@@ -852,7 +850,6 @@ void liveRemoteAutonomous(void){
   stopRollers();
 }
 
-#define SKILLS_INTAKE_OPEN_POSITION 70
 void skillsAutonomous(void) {
   EncoderL.resetRotation();
   EncoderR.resetRotation();
@@ -932,8 +929,8 @@ void skillsAutonomous(void) {
   // At this point, the odometry drifts. Manual adjustment
   // posX -= 1; 
   
-  IntakeL.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
+  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
   smartmove(116, 47, 0);
 
   spinIntakes(directionType::fwd);
@@ -985,8 +982,8 @@ void skillsAutonomous(void) {
   smartmove(113, 67, 270);
   spinIntakes(directionType::fwd);
   turnToAngle(0, 85);
-  IntakeL.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, SKILLS_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
+  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
 
   // Go for ball on blue side of field
   smartmove(108.5, 95, 0);
