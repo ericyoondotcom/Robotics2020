@@ -809,7 +809,7 @@ void liveRemoteAutonomous(void){
   IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
   IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
 
-  vex::this_thread::sleep_for(500);
+  vex::this_thread::sleep_for(250);
 
   smartmove(20.5, 21.5, 0, 900, false);
   vex::this_thread::sleep_for(300);
@@ -823,29 +823,28 @@ void liveRemoteAutonomous(void){
   rollerThread.join();
 
   smartmove(24.5, 26, 180);
-  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION, rotationUnits::deg);
+  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
 
   // Move right towards center tower
   smartmove(70, 30, 180);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
-  smartmove(70, 22, 180, 1000);
+  smartmove(70, 23.4, 180, 1000);
   rollerThread.join();
   
   smartmove(70, 34, 180);
   
   // Start facing right tower
-  // These values are not "correct"; however they are manually adjusted for predictable drift
-  smartmove(108, 21, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(111, 18, 90 + 45, 10000, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(directionType::fwd);
-  smartmove(119.5, 10.5, 90 + 45, 600);
-  vex::this_thread::sleep_for(300);
+  smartmove(117, 7, 90 + 45, 600);
+  vex::this_thread::sleep_for(200);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
   spinIntakes(directionType::rev);
   
-  smartmove(110, 12, 90 + 45);
+  smartmove(106, 16, 90 + 45);
   stopIntakes();
   stopRollers();
 }
