@@ -1003,8 +1003,8 @@ void skillsAutonomous(void) {
   smartmove(88, 70, 270, 900);
   smartmove(102, 70, 270, 900);
   // Try again just in case
-  // smartmove(88, 68.5, 270, 900);
-  // smartmove(102, 68.5, 270, 900);
+  smartmove(88, 68.5, 270, 900);
+  smartmove(102, 68.5, 270, 900);
   // Retreat
   spinIntakes(directionType::rev);
   vex::this_thread::sleep_for(300);
