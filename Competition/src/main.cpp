@@ -7,11 +7,11 @@ using namespace vex;
 
 // ************
 #define DEBUG false
+#define PRINT_TEMPERATURES false
 #define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
-#define SKILLS false
+#define SKILLS true
 #define LIVE_REMOTE true
 #define RED_TEAM true
-#define LEFT_SIDE_AUTON true
 // ************
 
 #define ENCODER_L_DIST 3.75
@@ -28,11 +28,12 @@ using namespace vex;
 #define INTAKE_SPEED_FWD_AUTON 80
 #define INTAKE_SPEED_REV 80
 #define INTAKE_OPEN_POS 80
-#define AUTON_INTAKE_OPEN_POSITION 70
+#define AUTON_INTAKE_OPEN_POSITION 50
 
 #define MACROS_ORTHOGONAL_SPEED 75
 
-#define INTAKE_PULSE_TIME 150
+// #define INTAKE_PULSE_TIME 150
+#define INTAKE_PULSE_TIME 0
 #define CYCLE_TIME 20
 
 #define MOTOR_TIMEOUT_SECS 5
@@ -349,6 +350,9 @@ void preDriver(){
 
 
 int odometryTaskCallback(){
+#if PRINT_TEMPERATURES
+  float tempTime = 0;
+#endif
   while(true){
 
 #if !DEBUG
@@ -356,6 +360,20 @@ int odometryTaskCallback(){
     vex::this_thread::sleep_for(CYCLE_TIME);
     continue;
   }
+#endif
+
+#if PRINT_TEMPERATURES
+  if(tempTime > 2000){
+    Controller.Screen.clearScreen();
+    Controller.Screen.setCursor(0, 0);
+    Controller.Screen.print("L: ");
+    Controller.Screen.print(IntakeL.temperature());
+    Controller.Screen.newLine();
+    Controller.Screen.print("R: ");
+    Controller.Screen.print(IntakeR.temperature());
+    tempTime = 0;
+  }
+  tempTime += 10;
 #endif
 
     // Odometry algorithm was super helpfully explained by Team 5225 PiLons. Thanks!
@@ -443,7 +461,20 @@ const float ROT_KP = 2.0f; // Remember: number must scale up to 100, but its in 
 const float ROT_KD = 0;
 float ERROR_THRESHOLD_XY = 1 * sqrt(2); // 1 inches in both directions allowed
 float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
-int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = 5, float maxXYSpeed = 80, float minRotSpeed = 10, float maxRotSpeed = 50, rotationSource rotationMode = rotationSource::inertial){
+
+#if SKILLS
+  const float MIN_XY_SPEED = 5;
+  const float MAX_XY_SPEED = 80;
+  const float MIN_ROT_SPEED = 10;
+  const float MAX_ROT_SPEED = 50;
+#else
+  const float MIN_XY_SPEED = 5;
+  const float MAX_XY_SPEED = 80;
+  const float MIN_ROT_SPEED = 10;
+  const float MAX_ROT_SPEED = 50;
+#endif
+
+int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = MIN_XY_SPEED, float maxXYSpeed = MAX_XY_SPEED, float minRotSpeed = MIN_ROT_SPEED, float maxRotSpeed = MAX_ROT_SPEED, rotationSource rotationMode = rotationSource::inertial){
   float errorXY = infinityf();
   float errorRot = infinityf();
   float rot = rotDeg * M_PI / 180;
@@ -797,6 +828,8 @@ void liveRemoteAutonomous(void){
     vex::this_thread::sleep_for(20);
   }
 
+  Gyro.resetHeading();
+
   thread rollerThread;
 
   // Same setup as for skills. preload needs to start between the bottom front roller and the top back roller
@@ -857,6 +890,8 @@ void skillsAutonomous(void) {
   while(Gyro.isCalibrating()){
     vex::this_thread::sleep_for(20);
   }
+
+  Gyro.resetHeading();
 
   thread rollerThread;
 
@@ -930,7 +965,7 @@ void skillsAutonomous(void) {
   
   IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
   IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
-  smartmove(116, 47, 0);
+  smartmove(116, 45.5, 0);
 
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(700);
@@ -954,7 +989,7 @@ void skillsAutonomous(void) {
   // smartmove(65, 109, 270);
   spinIntakes(directionType::fwd);
   smartmove(102, 65, 270, 750);
-  vex::this_thread::sleep_for(300);
+  vex::this_thread::sleep_for(500);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.3);
   rollerThread.join();
 
