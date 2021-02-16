@@ -455,23 +455,27 @@ int odometryTaskCallback(){
 }
 
 float MAX_ERROR_XY = 2 * 24 * sqrt(2); // Max distance you can be off = hypotenuse of field
-const float XY_KP = 7;
-const float XY_KD = 2;
-const float ROT_KP = 2.0f; // Remember: number must scale up to 100, but its in degrees
-const float ROT_KD = 0;
 float ERROR_THRESHOLD_XY = 1 * sqrt(2); // 1 inches in both directions allowed
 float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
 
 #if SKILLS
   const float MIN_XY_SPEED = 5;
-  const float MAX_XY_SPEED = 80;
+  const float MAX_XY_SPEED = 90;
   const float MIN_ROT_SPEED = 10;
-  const float MAX_ROT_SPEED = 50;
+  const float MAX_ROT_SPEED = 70;
+  const float XY_KP = 11;
+  const float XY_KD = 2;
+  const float ROT_KP = 2.0f;
+  const float ROT_KD = 0;
 #else
   const float MIN_XY_SPEED = 5;
   const float MAX_XY_SPEED = 80;
   const float MIN_ROT_SPEED = 10;
   const float MAX_ROT_SPEED = 50;
+  const float XY_KP = 7;
+  const float XY_KD = 2;
+  const float ROT_KP = 2.0f; // Remember: number must scale up to 100, but its in degrees
+  const float ROT_KD = 0;
 #endif
 
 int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = MIN_XY_SPEED, float maxXYSpeed = MAX_XY_SPEED, float minRotSpeed = MIN_ROT_SPEED, float maxRotSpeed = MAX_ROT_SPEED, rotationSource rotationMode = rotationSource::inertial){
@@ -996,11 +1000,11 @@ void skillsAutonomous(void) {
   // Poke ball out of center tower (with left arm)
   smartmove(102.5, 70.5, 270, 800);
   stopIntakes();
-  smartmove(88, 70.5, 270, 900);
-  smartmove(102, 70.5, 270, 900);
+  smartmove(88, 70, 270, 900);
+  smartmove(102, 70, 270, 900);
   // Try again just in case
-  smartmove(88, 68.5, 270, 900);
-  smartmove(102, 68.5, 270, 900);
+  // smartmove(88, 68.5, 270, 900);
+  // smartmove(102, 68.5, 270, 900);
   // Retreat
   spinIntakes(directionType::rev);
   vex::this_thread::sleep_for(300);
@@ -1046,8 +1050,25 @@ void skillsAutonomous(void) {
   rollerThread.join();
 
   // Back up
+  spinIntakes(directionType::fwd);
   smartmove(75, 98, 0);
+  turnToAngle(270, 85);
+  IntakeL.startSpinFor(directionType::rev, 40, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, 40, rotationUnits::deg);
 
+  // Go for left blue ball on field
+  smartmove(59, 116, 270);
+  spinIntakes(directionType::fwd);
+  vex::this_thread::sleep_for(1000);
+  spinIntakes(directionType::rev);
+
+  // Move to blue left tower
+  rollerThread = spinRollersForAsync(directionType::rev, 3);
+  smartmove(33, 131, 270 + 45);
+  return;
+  rollerThread.join();
+  // back up
+  smartmove(40, 124, 270 + 45);
 }
 
 int main() {
@@ -1056,7 +1077,6 @@ int main() {
 
 
   task odomTask( odometryTaskCallback );
-
 
   if(SKILLS){
     Competition.autonomous(skillsAutonomous);
