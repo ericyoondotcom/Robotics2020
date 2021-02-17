@@ -285,9 +285,9 @@ void spinIntakes(directionType direction){
   }
 }
 
-void stopIntakes(){
-  IntakeL.stop();
-  IntakeR.stop();
+void stopIntakes(brakeType brake = brakeType::coast){
+  IntakeL.stop(brake);
+  IntakeR.stop(brake);
 }
 
 void spinRollers(directionType direction, float speed = 0){
@@ -927,6 +927,7 @@ void skillsAutonomous(void) {
   RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
   RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
   smartmove(24.5, 26, 180);
+  stopIntakes(brakeType::hold);
 
   // Move left towards center tower
   smartmove(70, 30.5, 180);
@@ -946,6 +947,7 @@ void skillsAutonomous(void) {
 
   // Start facing right tower
   smartmove(108, 22, 90 + 45, 10000, true, 6, 90, 10, 65);
+  stopIntakes(brakeType::hold);
   smartmove(119.5, 10.5, 90 + 45, 600);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.2);
   rollerThread.join();
@@ -1033,6 +1035,7 @@ void skillsAutonomous(void) {
 
   // Go to blue right tower
   smartmove(125, 116, 45, 2000);
+  stopIntakes(brakeType::hold);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
   smartmove(117, 107, 45);
@@ -1065,6 +1068,7 @@ void skillsAutonomous(void) {
   // Move to blue left tower
   rollerThread = spinRollersForAsync(directionType::rev, 3);
   smartmove(33, 131, 270 + 45);
+  stopIntakes(brakeType::brake);
   return;
   rollerThread.join();
   // back up
