@@ -460,10 +460,10 @@ float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
 
 #if SKILLS
   const float MIN_XY_SPEED = 5;
-  const float MAX_XY_SPEED = 90;
+  const float MAX_XY_SPEED = 80;
   const float MIN_ROT_SPEED = 10;
-  const float MAX_ROT_SPEED = 70;
-  const float XY_KP = 11;
+  const float MAX_ROT_SPEED = 50;
+  const float XY_KP = 7;
   const float XY_KD = 2;
   const float ROT_KP = 2.0f;
   const float ROT_KD = 0;
@@ -478,7 +478,7 @@ float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
   const float ROT_KD = 0;
 #endif
 
-int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = MIN_XY_SPEED, float maxXYSpeed = MAX_XY_SPEED, float minRotSpeed = MIN_ROT_SPEED, float maxRotSpeed = MAX_ROT_SPEED, rotationSource rotationMode = rotationSource::inertial){
+int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotation = true, float minXYSpeed = MIN_XY_SPEED, float maxXYSpeed = MAX_XY_SPEED, float minRotSpeed = MIN_ROT_SPEED, float maxRotSpeed = MAX_ROT_SPEED, float xyErrorThreshold = ERROR_THRESHOLD_XY, float rotErrorThreshold = ERROR_THRESHOLD_ROT, rotationSource rotationMode = rotationSource::inertial){
   float errorXY = infinityf();
   float errorRot = infinityf();
   float rot = rotDeg * M_PI / 180;
@@ -513,12 +513,12 @@ int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool doRotat
       errorRot = 360 - errorRot;
     }
     
-    if(errorXY < ERROR_THRESHOLD_XY && !hasCompletedTranslation){
+    if(errorXY < xyErrorThreshold && !hasCompletedTranslation){
       hasCompletedTranslation = true;
     }
 
     // Dont allow rotation to stop until translation has completed
-    if(errorRot < ERROR_THRESHOLD_ROT && !hasCompletedRotation && hasCompletedTranslation){
+    if(errorRot < rotErrorThreshold && !hasCompletedRotation && hasCompletedTranslation){
       hasCompletedRotation = true;
 #if DEBUG
       Controller.rumble(".");
@@ -912,7 +912,7 @@ void skillsAutonomous(void) {
   vex::this_thread::sleep_for(500);
   
   rollerThread = spinRollersForAsync(directionType::fwd, 0.5);
-  smartmove(27.7, 25.7, 180 + 45, 5000, true, 5, 80, 10, 65);
+  smartmove(27.7, 25.7, 180 + 45, 5000, true, 15, 80, 10, 65, 3);
   smartmove(20.5, 21.5, 0, 900, false);
   vex::this_thread::sleep_for(300);
 
@@ -924,8 +924,9 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
   rollerThread.join();
 
-  RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
-  RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
+  // RollerF.startRotateFor(directionType::rev, .75, rotationUnits::rev, 100, velocityUnits::pct);
+  // RollerB.startRotateFor(directionType::fwd, .75, rotationUnits::rev, 100, velocityUnits::pct);
+
   smartmove(24.5, 26, 180);
   stopIntakes(brakeType::hold);
 
@@ -934,7 +935,7 @@ void skillsAutonomous(void) {
   rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
   smartmove(70, 22, 180, 1000);
   rollerThread.join();
-  smartmove(70, 34, 180);
+  smartmove(70, 34, 180, 1000, false, 15, 90, 10, 65, 3);
   
   smartmove(80, 24, 90, 7000, true, 5, 80, 10, 75);
   // Approach ball on the field
@@ -946,29 +947,17 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
 
   // Start facing right tower
-  smartmove(108, 22, 90 + 45, 10000, true, 6, 90, 10, 65);
+  smartmove(108, 22, 90 + 45, 3000, true, 15, 90, 10, 65, 3);
   stopIntakes(brakeType::hold);
   smartmove(119.5, 10.5, 90 + 45, 600);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.2);
   rollerThread.join();
   smartmove(110, 22, 90 + 45);
-  stopIntakes();
 
-  smartmove(110, 22, 90 + 45, 5000, false);
   // spin first, move 2nd
   spinIntakes(directionType::fwd);
   smartmove(110, 22, 0);
 
-  /*
-  // Move backwards to the wall to square up odometry
-  moveCardinal(cardinal::reverse, 24, 30, 2000);
-  Gyro.resetHeading();
-  currRot = 0;
-  */
-
-  // At this point, the odometry drifts. Manual adjustment
-  // posX -= 1; 
-  
   IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
   IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
   smartmove(116, 45.5, 0);
@@ -981,11 +970,11 @@ void skillsAutonomous(void) {
 
   // Approach neutral right
   // Need to move foward/left a tiny bit so it doesn't bump into tower (110 instead of 120)
-  smartmove(112, 58, 0, 5000, false);
+  smartmove(112, 58, 0, 2000, false);
   turnToAngle(90, 85);
   // Dont want to hit left red ball... also bonus if we "accidentally" descore 1 blue!
   spinIntakes(directionType::rev);
-  smartmove(121, 59, 90, 1000, false);
+  smartmove(119, 59, 90, 1000, false);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.14);
   rollerThread.join();
 
@@ -1005,21 +994,20 @@ void skillsAutonomous(void) {
   smartmove(88, 70, 270, 900);
   smartmove(102, 70, 270, 900);
   // Try again just in case
-  smartmove(88, 68.5, 270, 900);
-  smartmove(102, 68.5, 270, 900);
-  // Retreat
+  // smartmove(88, 68.5, 270, 900);
+  // smartmove(102, 68.5, 270, 900);
   spinIntakes(directionType::rev);
   vex::this_thread::sleep_for(300);
-  rollerThread = spinRollersForAsync(directionType::rev, .4);
-  rollerThread.join();
+  // rollerThread = spinRollersForAsync(directionType::rev, .4);
+  // rollerThread.join();
   smartmove(104, 67, 270);
-  smartmove(86, 67, 270, 800);
+  smartmove(88, 67, 270, 800);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.5);
   rollerThread.join();
 
 
   // Back up
-  smartmove(113, 67, 270);
+  smartmove(113, 67, 270, 1000, true, 15, 90, 10, 65, 3);
   spinIntakes(directionType::fwd);
   turnToAngle(0, 85);
   IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
@@ -1034,7 +1022,7 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
 
   // Go to blue right tower
-  smartmove(125, 116, 45, 2000);
+  smartmove(125, 116, 45, 1700);
   stopIntakes(brakeType::hold);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
@@ -1047,32 +1035,29 @@ void skillsAutonomous(void) {
   rollerThread.join();
 
   // Approach blue mid
-  smartmove(74, 98, 0);
+  smartmove(74, 98, 0, 5000, true, MIN_XY_SPEED, 90, 5, 65);
   rollerThread = spinRollersForAsync(directionType::fwd, 4);
-  smartmove(74, 111, 0, 1100);
+  smartmove(74, 109, 0, 1100);
   rollerThread.join();
 
   // Back up
-  spinIntakes(directionType::fwd);
-  smartmove(75, 98, 0);
-  turnToAngle(270, 85);
-  IntakeL.startSpinFor(directionType::rev, 40, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, 40, rotationUnits::deg);
+  smartmove(57, 98, 0, 1000, true, 15, 90, 10, 65, 3);
+  turnToAngle(270 - 3, 85, true, false);
 
   // Go for left blue ball on field
-  smartmove(59, 116, 270);
   spinIntakes(directionType::fwd);
-  vex::this_thread::sleep_for(1000);
+  smartmove(54, 112, 270);
+  rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
+  vex::this_thread::sleep_for(600);
   spinIntakes(directionType::rev);
 
   // Move to blue left tower
-  rollerThread = spinRollersForAsync(directionType::rev, 3);
-  smartmove(33, 131, 270 + 45);
+  smartmove(29, 115, 270 + 45, 1500);
+  rollerThread = spinRollersForAsync(directionType::fwd, 3);
   stopIntakes(brakeType::brake);
-  return;
   rollerThread.join();
   // back up
-  smartmove(40, 124, 270 + 45);
+  smartmove(36, 102, 270 + 45);
 }
 
 int main() {
