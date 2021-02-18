@@ -1044,13 +1044,12 @@ void skillsAutonomous(void) {
   smartmove(74, 90, 0, 1000, true, 15, 90, 10, 65, 3);
 
   // Go for left blue ball on wall
-  smartmove(25, 110, 270, 4000, true, 10, 90, 10, 65);
-  smartmove(0, 110, 270, 800);
+  smartmove(25, 103, 270, 4000, true, 15, 90, 10, 65);
+  smartmove(0, 103, 270, 800);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
 
   // Move to blue left tower
-  smartmove(29, 119, 270 + 45, 2200);
-  return;
+  smartmove(26, 121, 270 + 45, 2200);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
   // back up
