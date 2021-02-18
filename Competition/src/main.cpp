@@ -1035,26 +1035,23 @@ void skillsAutonomous(void) {
   rollerThread.join();
 
   // Approach blue mid
-  smartmove(74, 98, 0, 5000, true, MIN_XY_SPEED, 90, 5, 65);
+  smartmove(74, 99, 0, 5000, true, MIN_XY_SPEED, 90, 5, 65);
   rollerThread = spinRollersForAsync(directionType::fwd, 4);
-  smartmove(74, 109, 0, 1100);
+  smartmove(74, 110, 0, 1100);
   rollerThread.join();
 
   // Back up
-  smartmove(57, 98, 0, 1000, true, 15, 90, 10, 65, 3);
-  turnToAngle(270 - 3, 85, true, false);
+  smartmove(74, 90, 0, 1000, true, 15, 90, 10, 65, 3);
 
-  // Go for left blue ball on field
-  spinIntakes(directionType::fwd);
-  smartmove(54, 112, 270);
+  // Go for left blue ball on wall
+  smartmove(25, 110, 270, 4000, true, 10, 90, 10, 65);
+  smartmove(0, 110, 270, 800);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
-  vex::this_thread::sleep_for(600);
-  spinIntakes(directionType::rev);
 
   // Move to blue left tower
-  smartmove(29, 115, 270 + 45, 1500);
+  smartmove(29, 119, 270 + 45, 2200);
+  return;
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
-  stopIntakes(brakeType::brake);
   rollerThread.join();
   // back up
   smartmove(36, 102, 270 + 45);
