@@ -791,7 +791,12 @@ void usercontrol(void) {
       bButtonCooldown += CYCLE_TIME;
     }
 
-    if(!timeNotifSounded && t > 95000){ // 10secs left notification
+#if SKILLS
+    const int TIME_NOTIF = 50000;
+#else
+    const int TIME_NOTIF = 95000;
+#endif
+    if(!timeNotifSounded && t > TIME_NOTIF){ // 10secs left notification
       Controller.rumble(".....");
       timeNotifSounded = true;
     }
