@@ -445,8 +445,8 @@ int odometryTaskCallback(){
 
 #if DEBUG
     if(Controller.ButtonY.pressing()){
-      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
-      // std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
+      // std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+      std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
     }
 #endif
     vex::this_thread::sleep_for(CYCLE_TIME);
@@ -1038,27 +1038,33 @@ void skillsAutonomous(void) {
   smartmove(134, 102, 90, 800);
   rollerThread = spinRollersForAsync(directionType::fwd, 2);
   rollerThread.join();
+  std::cout << "Rotation before correction: " << Gyro.heading() << std::endl;
+  std::cout << "X pos: " << posX << std::endl;
+  Gyro.setHeading(90, rotationUnits::deg);
 
   // Approach blue mid
   smartmove(74, 102, 0, 4300, true, MIN_XY_SPEED, 90, 5, 65);
   rollerThread = spinRollersForAsync(directionType::fwd, 4);
   smartmove(74, 112, 0, 1100);
-  posY = 110; // Since it's lined up to the tower, reset Y pos
+  // posY = 110; // Since it's lined up to the tower, reset Y pos
   rollerThread.join();
 
   // Back up
-  smartmove(64, 90, 0, 1000, true, 15, 90, 10, 65, 3);
+  spinIntakes(directionType::fwd);
+  smartmove(67, 90, 0, 1000, true, 15, 90, 10, 65, 3);
+  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
   turnToAngle(270 - 3, 85, true, false);
 
   // Go for left blue ball on field
+  smartmove(60, 109, 270);
   spinIntakes(directionType::fwd);
-  smartmove(54, 112, 270);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
   vex::this_thread::sleep_for(600);
   spinIntakes(directionType::rev);
 
   // Move to blue left tower
-  smartmove(26, 121, 270 + 45, 2200);
+  smartmove(26, 123, 270 + 45, 2200);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
   // back up
