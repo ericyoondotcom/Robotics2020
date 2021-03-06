@@ -962,7 +962,18 @@ void skillsAutonomous(void) {
   // spin first, move 2nd
   spinIntakes(directionType::fwd);
   smartmove(110, 22, 0);
+  stopIntakes(brakeType::coast);
 
+  // Back up to square to wall
+  smartmove(110, -40, 0, 1000);
+  vex::this_thread::sleep_for(200);
+  std::cout << "Before squaring up... rot: " << Gyro.heading(rotationUnits::deg) << ", posY: " << posY << std::endl;
+  currRot = 0;
+  Gyro.setHeading(0, rotationUnits::deg);
+  posY = -5; // Offset 5in since the waypoints were set when it was off –_–
+  posX += 4; // Artifical offset
+
+  // Get ball on field for neutral right
   IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
   IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
   smartmove(116, 45.5, 0);
