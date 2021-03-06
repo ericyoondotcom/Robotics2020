@@ -964,6 +964,7 @@ void skillsAutonomous(void) {
   smartmove(110, 22, 0);
   stopIntakes(brakeType::coast);
 
+  /*
   // Back up to square to wall
   smartmove(110, -40, 0, 1000);
   vex::this_thread::sleep_for(200);
@@ -972,6 +973,7 @@ void skillsAutonomous(void) {
   Gyro.setHeading(0, rotationUnits::deg);
   posY = -5; // Offset 5in since the waypoints were set when it was off –_–
   posX += 4; // Artifical offset
+  */
 
   // Get ball on field for neutral right
   IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 5, rotationUnits::deg);
@@ -1073,6 +1075,7 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(1000);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
+  rollerThread.join();
   spinIntakes(directionType::rev);
 
   // Move to blue left tower
