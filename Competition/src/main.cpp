@@ -974,9 +974,9 @@ void skillsAutonomous(void) {
   posX += 4; // Artifical offset
 
   // Get ball on field for neutral right
-  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 10, rotationUnits::deg);
-  smartmove(116, 45.5, 0);
+  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 5, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 5, rotationUnits::deg);
+  smartmove(116, 47, 0);
 
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(700);
@@ -1032,13 +1032,13 @@ void skillsAutonomous(void) {
   // Go for ball on blue side of field
   smartmove(108.5, 95, 0);
   spinIntakes(directionType::fwd);
-  vex::this_thread::sleep_for(1000);
-  rollerThread = spinRollersForAsync(directionType::rev, .4);
+  vex::this_thread::sleep_for(800);
+  rollerThread = spinRollersForAsync(directionType::rev, 1);
   rollerThread.join();
   spinIntakes(directionType::rev);
 
   // Go to blue right tower
-  smartmove(120, 122, 45, 1700);
+  smartmove(123, 119, 45, 1700);
   stopIntakes(brakeType::hold);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
@@ -1064,19 +1064,20 @@ void skillsAutonomous(void) {
   // Back up
   spinIntakes(directionType::fwd);
   smartmove(67, 90, 0, 1000, true, 15, 90, 10, 65, 3);
-  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
+  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 5, rotationUnits::deg);
+  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 5, rotationUnits::deg);
   turnToAngle(270 - 3, 85, true, false);
 
   // Go for left blue ball on field
-  smartmove(60, 107, 270);
+  smartmove(58, 112, 270);
   spinIntakes(directionType::fwd);
+  vex::this_thread::sleep_for(1000);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
-  vex::this_thread::sleep_for(600);
   spinIntakes(directionType::rev);
 
   // Move to blue left tower
-  smartmove(26, 106, 270 + 45, 2200);
+  smartmove(23, 112, 270 + 45, 2000);
+  stopIntakes(brakeType::hold);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
   // back up
