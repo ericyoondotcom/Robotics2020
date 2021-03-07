@@ -1040,7 +1040,7 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
 
   // Go to blue right tower
-  smartmove(123, 119, 45, 1700);
+  smartmove(127, 119, 45, 1700);
   stopIntakes(brakeType::hold);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
@@ -1060,18 +1060,19 @@ void skillsAutonomous(void) {
   smartmove(74, 98, 0, 4300, true, MIN_XY_SPEED, 90, 5, 65);
   rollerThread = spinRollersForAsync(directionType::fwd, 4);
   smartmove(74, 112, 0, 1100);
-  // posY = 110; // Since it's lined up to the tower, reset Y pos
+  std::cout << "Current Y before correction: " << posY << std::endl;
+  posY = 111; // Since it's lined up to the tower, reset Y pos
   rollerThread.join();
 
   // Back up
   spinIntakes(directionType::fwd);
-  smartmove(67, 90, 0, 1000, true, 15, 90, 10, 65, 3);
+  smartmove(67, 94, 0, 1000, true, 15, 90, 10, 65, 3);
   IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 5, rotationUnits::deg);
   IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION - 5, rotationUnits::deg);
   turnToAngle(270 - 3, 85, true, false);
 
   // Go for left blue ball on field
-  smartmove(58, 112, 270);
+  smartmove(58, 115, 270);
   spinIntakes(directionType::fwd);
   vex::this_thread::sleep_for(1000);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
@@ -1079,7 +1080,7 @@ void skillsAutonomous(void) {
   spinIntakes(directionType::rev);
 
   // Move to blue left tower
-  smartmove(23, 112, 270 + 45, 2000);
+  smartmove(21, 116, 270 + 45, 2000);
   stopIntakes(brakeType::hold);
   rollerThread = spinRollersForAsync(directionType::fwd, 3);
   rollerThread.join();
