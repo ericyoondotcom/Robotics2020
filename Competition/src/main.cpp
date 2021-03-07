@@ -917,9 +917,8 @@ void skillsAutonomous(void) {
   vex::this_thread::sleep_for(500);
   
   rollerThread = spinRollersForAsync(directionType::fwd, 0.5);
-  smartmove(27.7, 25.7, 180 + 45, 5000, true, 15, 80, 10, 65, 3);
+  smartmove(27.7, 25.7, 180 + 45, 5000, true, 15, 80, 10, 65, 5);
   smartmove(20.5, 21.5, 0, 900, false);
-  vex::this_thread::sleep_for(300);
 
   // On left tower
   rollerThread = spinRollersForAsync(directionType::fwd, 1.5);
@@ -938,7 +937,7 @@ void skillsAutonomous(void) {
   // Move left towards center tower
   smartmove(70, 30.5, 180);
   rollerThread = spinRollersForAsync(directionType::fwd, 2.8);
-  smartmove(70, 22, 180, 1000);
+  smartmove(70, 21, 180, 1000);
   rollerThread.join();
   smartmove(70, 34, 180, 1000, false, 15, 90, 10, 65, 3);
   
@@ -954,7 +953,7 @@ void skillsAutonomous(void) {
   // Start facing right tower
   smartmove(108, 22, 90 + 45, 3000, true, 15, 90, 10, 65, 3);
   stopIntakes(brakeType::hold);
-  smartmove(119.5, 10.5, 90 + 45, 600);
+  smartmove(120.5, 11.5, 90 + 45, 600);
   rollerThread = spinRollersForAsync(directionType::fwd, 3.2);
   rollerThread.join();
   smartmove(110, 22, 90 + 45);
@@ -1057,7 +1056,7 @@ void skillsAutonomous(void) {
   posX = 128;
 
   // Approach blue mid
-  smartmove(74, 98, 0, 4300, true, 10, 90, 5, 65);
+  smartmove(74, 98, 0, 3600, true, 10, 90, 5, 65);
   rollerThread = spinRollersForAsync(directionType::fwd, 4);
   smartmove(74, 112, 0, 1100);
   std::cout << "Current Y before correction: " << posY << std::endl;
