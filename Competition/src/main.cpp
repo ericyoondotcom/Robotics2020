@@ -937,7 +937,7 @@ void skillsAutonomous(void) {
 
   // Move left towards center tower
   smartmove(70, 30.5, 180);
-  rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2.8);
   smartmove(70, 22, 180, 1000);
   rollerThread.join();
   smartmove(70, 34, 180, 1000, false, 15, 90, 10, 65, 3);
@@ -1048,7 +1048,7 @@ void skillsAutonomous(void) {
 
   // Grab ball on side of wall
   smartmove(117, 102, 90);
-  smartmove(134, 102, 90, 800);
+  smartmove(137, 102, 90, 900);
   rollerThread = spinRollersForAsync(directionType::fwd, 2);
   rollerThread.join();
   std::cout << "Rotation before correction: " << Gyro.heading() << std::endl;
@@ -1057,7 +1057,7 @@ void skillsAutonomous(void) {
   posX = 128;
 
   // Approach blue mid
-  smartmove(74, 98, 0, 4300, true, MIN_XY_SPEED, 90, 5, 65);
+  smartmove(74, 98, 0, 4300, true, 10, 90, 5, 65);
   rollerThread = spinRollersForAsync(directionType::fwd, 4);
   smartmove(74, 112, 0, 1100);
   std::cout << "Current Y before correction: " << posY << std::endl;
@@ -1074,7 +1074,7 @@ void skillsAutonomous(void) {
   // Go for left blue ball on field
   smartmove(58, 115, 270);
   spinIntakes(directionType::fwd);
-  vex::this_thread::sleep_for(1000);
+  vex::this_thread::sleep_for(800);
   rollerThread = spinRollersForAsync(directionType::fwd, 1.6);
   rollerThread.join();
   spinIntakes(directionType::rev);
