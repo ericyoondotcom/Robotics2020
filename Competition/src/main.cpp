@@ -27,7 +27,7 @@ using namespace vex;
 #define INTAKE_SPEED_FWD 100
 #define INTAKE_SPEED_FWD_AUTON 80
 #define INTAKE_SPEED_REV 80
-#define INTAKE_OPEN_POS 80
+#define INTAKE_OPEN_POS 60
 #define AUTON_INTAKE_OPEN_POSITION 50
 
 #define MACROS_ORTHOGONAL_SPEED 75
@@ -56,6 +56,8 @@ inertial Gyro = inertial(PORT9);
 encoder EncoderR = encoder(Brain.ThreeWirePort.C);
 encoder EncoderL = encoder(Brain.ThreeWirePort.G);
 encoder EncoderB = encoder(Brain.ThreeWirePort.E);
+bumper BumperR= bumper(Brain.ThreeWirePort.B);
+bumper BumperL= bumper(Brain.ThreeWirePort.A);
 
 bool enableRelativeDriving = true;
 
@@ -612,10 +614,43 @@ void usercontrol(void) {
   //     moveCardinal(cardinal::reverse, 12 * 6);
   //   }
   // }
-
+  /**
+MotorA.setMaxTorque(0.505, Nm);
+MotorB.setMaxTorque(0.505, Nm);
+MotorC.setMaxTorque(0.505, Nm);
+MotorD.setMaxTorque(0.505, Nm);
+*/
+int counter=0;
   while(true){
     double gyroReading = Gyro.heading();
+    /**
+if(counter%2==0){
+    Controller.Screen.clearScreen();
+    Controller.Screen.setCursor(0, 0);
+    
+    Controller.Screen.print("Left front: ");
 
+    //Controller.Screen.print("speed: ");
+    Controller.Screen.print(MotorA.velocity(percentUnits::pct));
+    Controller.Screen.newLine();
+    Controller.Screen.print("torque: ");
+    Controller.Screen.print(MotorA.torque(Nm));
+   //Controller.Screen.print("right back: ");
+
+    //Controller.Screen.print("speed: ");
+    //Controller.Screen.print(MotorC.velocity(percentUnits::pct));
+   // Controller.Screen.newLine();
+    
+    
+    Controller.Screen.print("right bumper: ");
+    Controller.Screen.print(BumperR.pressing());
+    Controller.Screen.newLine();
+    Controller.Screen.print("left bumper: ");
+    Controller.Screen.print(BumperL.pressing());
+    
+  }
+    counter++;
+    */
     if(Controller.ButtonX.pressing()){
       speed = 1;
     }
@@ -688,8 +723,8 @@ void usercontrol(void) {
       // IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
       holdingIntakes = true;
       holdingIntakes180 = false;
-      IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 100, velocityUnits::pct);
-      IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 100, velocityUnits::pct);
+      IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 21, velocityUnits::pct);
+      IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 21, velocityUnits::pct);
       IntakeL.setBrake(brakeType::hold);
       IntakeR.setBrake(brakeType::hold);
     } else if(holdingIntakes180){
