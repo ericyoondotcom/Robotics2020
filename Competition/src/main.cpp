@@ -26,8 +26,8 @@ using namespace vex;
 #define ROLLER_UNSTUCK_SPEED 80
 #define INTAKE_SPEED_FWD 100
 #define INTAKE_SPEED_FWD_AUTON 80
-#define INTAKE_SPEED_REV 80
-#define INTAKE_OPEN_POS 60
+#define INTAKE_SPEED_REV 21
+#define INTAKE_OPEN_POS 75
 #define AUTON_INTAKE_OPEN_POSITION 50
 
 #define MACROS_ORTHOGONAL_SPEED 75
@@ -588,20 +588,11 @@ void usercontrol(void) {
     t += 20;
     vex::this_thread::sleep_for(20);
   }
-#if DEBUG
+
   MotorA.setBrake(brakeType::coast);
   MotorB.setBrake(brakeType::coast);
   MotorC.setBrake(brakeType::coast);
   MotorD.setBrake(brakeType::coast);
-#else
-  MotorA.setBrake(brakeType::brake);
-  MotorB.setBrake(brakeType::brake);
-  MotorC.setBrake(brakeType::brake);
-  MotorD.setBrake(brakeType::brake);
-#endif
-  IntakeL.resetRotation();
-  IntakeR.resetRotation();
-  Controller.ButtonR2.pressed(onIntakePressed);
   
   float speed = 1;
   bool holdingIntakes = false;
@@ -614,43 +605,9 @@ void usercontrol(void) {
   //     moveCardinal(cardinal::reverse, 12 * 6);
   //   }
   // }
-  /**
-MotorA.setMaxTorque(0.505, Nm);
-MotorB.setMaxTorque(0.505, Nm);
-MotorC.setMaxTorque(0.505, Nm);
-MotorD.setMaxTorque(0.505, Nm);
-*/
-int counter=0;
+ 
   while(true){
     double gyroReading = Gyro.heading();
-    /**
-if(counter%2==0){
-    Controller.Screen.clearScreen();
-    Controller.Screen.setCursor(0, 0);
-    
-    Controller.Screen.print("Left front: ");
-
-    //Controller.Screen.print("speed: ");
-    Controller.Screen.print(MotorA.velocity(percentUnits::pct));
-    Controller.Screen.newLine();
-    Controller.Screen.print("torque: ");
-    Controller.Screen.print(MotorA.torque(Nm));
-   //Controller.Screen.print("right back: ");
-
-    //Controller.Screen.print("speed: ");
-    //Controller.Screen.print(MotorC.velocity(percentUnits::pct));
-   // Controller.Screen.newLine();
-    
-    
-    Controller.Screen.print("right bumper: ");
-    Controller.Screen.print(BumperR.pressing());
-    Controller.Screen.newLine();
-    Controller.Screen.print("left bumper: ");
-    Controller.Screen.print(BumperL.pressing());
-    
-  }
-    counter++;
-    */
     if(Controller.ButtonX.pressing()){
       speed = 1;
     }
@@ -723,8 +680,8 @@ if(counter%2==0){
       // IntakeR.spin(directionType::rev, INTAKE_SPEED_REV, velocityUnits::pct);
       holdingIntakes = true;
       holdingIntakes180 = false;
-      IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 21, velocityUnits::pct);
-      IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg, 21, velocityUnits::pct);
+      IntakeL.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg,  INTAKE_SPEED_REV, velocityUnits::pct);
+      IntakeR.startRotateFor(directionType::rev, INTAKE_OPEN_POS, rotationUnits::deg,  INTAKE_SPEED_REV, velocityUnits::pct);
       IntakeL.setBrake(brakeType::hold);
       IntakeR.setBrake(brakeType::hold);
     } else if(holdingIntakes180){
