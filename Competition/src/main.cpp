@@ -593,18 +593,14 @@ void usercontrol(void) {
   MotorB.setBrake(brakeType::coast);
   MotorC.setBrake(brakeType::coast);
   MotorD.setBrake(brakeType::coast);
+
+  IntakeL.resetRotation();
+  IntakeR.resetRotation();
+  Controller.ButtonR2.pressed(onIntakePressed);
   
   float speed = 1;
   bool holdingIntakes = false;
   bool holdingIntakes180 = false;
-
-  // while(true){
-  //   if(Controller.ButtonA.pressing()){
-  //     moveCardinal(cardinal::forward, 12 * 6);
-  //   }else if(Controller.ButtonB.pressing()){
-  //     moveCardinal(cardinal::reverse, 12 * 6);
-  //   }
-  // }
  
   while(true){
     double gyroReading = Gyro.heading();
