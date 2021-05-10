@@ -6,7 +6,7 @@
 using namespace vex;
 
 // ************
-#define DEBUG false
+#define DEBUG true
 #define PRINT_TEMPERATURES false
 #define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS false
@@ -64,8 +64,14 @@ bool enableRelativeDriving = true;
 float encLPrev = 0;
 float encRPrev = 0;
 float encBPrev = 0;
+#if SKILLS
 float posX = 35.3f; // X is left/right
 float posY = 0.0f; // Y is forwards/backwards
+#else
+float posX = 37.0f;
+float posY = 7.0f;
+#define AUTON_STARTING_ROTATION 297
+#endif
 float currRot = 0.0f;
 
 float intakePulse = 0;
@@ -447,7 +453,7 @@ int odometryTaskCallback(){
 
 #if DEBUG
     if(Controller.ButtonY.pressing()){
-      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t " << (currRot / (2 * M_PI) * 360) << "°\n";
+      std::cout << "[\t" << posX << ",\t\t" << posY << "\t] \t @ \t odom: " << (currRot / (2 * M_PI) * 360) << "°\t\tgyro: " << Gyro.heading() << "°\n";
       // std::cout << -EncoderL.rotation(rotationUnits::rev) << ",\t\t" << EncoderR.rotation(rotationUnits::rev) << ",\t\t" << EncoderB.rotation(rotationUnits::rev) << std::endl;
     }
 #endif
@@ -485,7 +491,7 @@ int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool stopOnB
 
   float t = 0;
   while(!hasCompletedTranslation || !hasCompletedRotation){
-    if(BumperL.pressing() || BumperR.pressing()){
+    if((BumperL.pressing() || BumperR.pressing()) && stopOnBumperPress){
       break;
     }
 
@@ -559,6 +565,9 @@ int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool stopOnB
     MotorD.spin(directionType::fwd, normalizedX - normalizedY + rotSpeed, velocityUnits::pct);
 
 #if DEBUG
+    Controller.Screen.clearScreen();
+    Controller.Screen.setCursor(0, 0);
+    Controller.Screen.print(theta * 180 / M_PI);
     if(Controller.ButtonY.pressing()){
       std::cout <<
         "[" << posX << ",\t" << posY << "]\t\t XYdiff: [" << xDiff << ",\t" << yDiff << "]\t\t\terrorXY: " << errorXY <<
@@ -592,6 +601,12 @@ void usercontrol(void) {
     t += 20;
     vex::this_thread::sleep_for(20);
   }
+
+#if DEBUG && !SKILLS
+  Gyro.setHeading(AUTON_STARTING_ROTATION, rotationUnits::deg);
+  currRot = (AUTON_STARTING_ROTATION / 180.0f) * M_PI;
+  std::cout << Gyro.heading() << std::endl;
+#endif
 
   MotorA.setBrake(brakeType::coast);
   MotorB.setBrake(brakeType::coast);
@@ -825,26 +840,27 @@ void liveRemoteAutonomous(void){
     vex::this_thread::sleep_for(20);
   }
 
-  Gyro.resetHeading();
+  Gyro.setHeading(AUTON_STARTING_ROTATION, rotationUnits::deg);
+
+  // NOTES: 
+  // WHATS GOING WRONG IS THAT PATHFINDING IS KINDA BROKEN WHEN
+  // THE ROBOT STARTS AT A NON-ORTHOGONAL ROTATION, PROBABLY BECAUSE
+  // OF THE X DRIVE. IT CIRCLES AROUND THE TARGET POINT. TRY IMMEDIATELY
+  // CORRECTING TO AN ORTHOGONAL ANGLE AFTER HOOD IS DEPLOYED
 
   thread rollerThread;
-
-  // Same setup as for skills. preload needs to start between the bottom front roller and the top back roller
-  spinIntakes(directionType::rev);
-#if AUTON_NOT_PRELOADED
+  spinRollers(directionType::fwd);
   vex::this_thread::sleep_for(500);
-#endif
-  smartmove(27.7, 25.7, 180 + 45, 5000, false, true, 5, 80, 10, 65);
-
-  IntakeL.spin(directionType::fwd, 100, velocityUnits::pct);
-  IntakeR.spin(directionType::fwd, 100, velocityUnits::pct);
-
+  spinIntakes(directionType::fwd);
+  stopRollers();
+  // Ball in front of left tower
+  smartmove(20, 30, 180 + 45, 5000, false, false, MIN_XY_SPEED, 35);
+  return;
   vex::this_thread::sleep_for(250);
 
-  smartmove(20.5, 21.5, 0, 900, false, false);
+  // Left tower position
+  smartmove(19, 19, 0, 900, true, false);
   vex::this_thread::sleep_for(300);
-
-  // On left tower
   rollerThread = spinRollersForAsync(directionType::fwd, 1.5);
   stopIntakes();
 
