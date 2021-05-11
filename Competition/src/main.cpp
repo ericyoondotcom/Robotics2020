@@ -6,7 +6,7 @@
 using namespace vex;
 
 // ************
-#define DEBUG true
+#define DEBUG false
 #define PRINT_TEMPERATURES false
 #define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS false
@@ -40,6 +40,8 @@ using namespace vex;
 
 #define BUTTON_COOLDOWN_MILLIS 400
 
+#define ROTATION_SOURCE rotationSource::inertial
+
 competition Competition;
 brain Brain;
 controller Controller;
@@ -68,7 +70,7 @@ float encBPrev = 0;
 float posX = 35.3f; // X is left/right
 float posY = 0.0f; // Y is forwards/backwards
 #else
-float posX = 37.0f;
+float posX = 47.0f;
 float posY = 7.0f;
 #define AUTON_STARTING_ROTATION 297
 #endif
@@ -193,15 +195,15 @@ void pointTurn(float degrees){
  * @param useBestDirection    If set to true, the sign of speedPct will be disregarded and the shortest path (left or right) will be taken.
  * @param reverseForPrecision If set to true, robot will turn the opposite direction after turn is finished to compensate for overshooting the target angle.
  */
-void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = true, bool reverseForPrecision = true, rotationSource rotSource = rotationSource::inertial){
+void turnToAngle(double targetHeading, float speedPct, bool useBestDirection = true, bool reverseForPrecision = true){
   const float TOLERANCE = 0;
 
   float currentHeading;
-  if(rotSource == rotationSource::odometry){
+  if(ROTATION_SOURCE == rotationSource::odometry){
     currentHeading = currRot * 180 / M_PI;
-  } else if(rotSource == rotationSource::inertial){
+  } else if(ROTATION_SOURCE == rotationSource::inertial){
     currentHeading = Gyro.heading();
-  } else if(rotSource == rotationSource::average){
+  } else if(ROTATION_SOURCE == rotationSource::average){
     currentHeading = ((currRot * 180 / M_PI) + Gyro.heading()) / 2;
   }
 
@@ -443,7 +445,17 @@ int odometryTaskCallback(){
         (2.0f * M_PI)
       );
     }
-    float relativeAngle = std::fmod((double)(currRot + vectorAngle), (double)(2.0f * M_PI));
+
+    float currentHeading;
+    if(ROTATION_SOURCE == rotationSource::odometry){
+      currentHeading = currRot;
+    } else if(ROTATION_SOURCE == rotationSource::inertial){
+      currentHeading = Gyro.heading() * M_PI / 180;
+    } else if(ROTATION_SOURCE == rotationSource::average){
+      currentHeading = ((Gyro.heading() * M_PI / 180) + currRot) / 2;
+    }
+
+    float relativeAngle = std::fmod((double)(currentHeading + vectorAngle), (double)(2.0f * M_PI));
 
     float normalizedY = std::cos(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
     float normalizedX = std::sin(relativeAngle) * euclidianDistance * (deltaX < 0 ? -1.0f : 1.0f);
@@ -841,20 +853,16 @@ void liveRemoteAutonomous(void){
   }
 
   Gyro.setHeading(AUTON_STARTING_ROTATION, rotationUnits::deg);
-
-  // NOTES: 
-  // WHATS GOING WRONG IS THAT PATHFINDING IS KINDA BROKEN WHEN
-  // THE ROBOT STARTS AT A NON-ORTHOGONAL ROTATION, PROBABLY BECAUSE
-  // OF THE X DRIVE. IT CIRCLES AROUND THE TARGET POINT. TRY IMMEDIATELY
-  // CORRECTING TO AN ORTHOGONAL ANGLE AFTER HOOD IS DEPLOYED
+  currRot = (AUTON_STARTING_ROTATION / 180.0f) * M_PI;
 
   thread rollerThread;
   spinRollers(directionType::fwd);
   vex::this_thread::sleep_for(500);
   spinIntakes(directionType::fwd);
   stopRollers();
+
   // Ball in front of left tower
-  smartmove(20, 30, 180 + 45, 5000, false, false, MIN_XY_SPEED, 35);
+  smartmove(20, 20, 180 + 45, 5000, false, true, MIN_XY_SPEED, MAX_XY_SPEED, MIN_ROT_SPEED, 70);
   return;
   vex::this_thread::sleep_for(250);
 
