@@ -70,7 +70,7 @@ float encBPrev = 0;
 float posX = 35.3f; // X is left/right
 float posY = 0.0f; // Y is forwards/backwards
 #else
-float posX = 47.0f;
+float posX = 67.0f;
 float posY = 7.0f;
 #define AUTON_STARTING_ROTATION 297
 #endif
@@ -857,19 +857,18 @@ void liveRemoteAutonomous(void){
 
   thread rollerThread;
   spinRollers(directionType::fwd);
-  vex::this_thread::sleep_for(500);
+  vex::this_thread::sleep_for(300);
   spinIntakes(directionType::fwd);
   stopRollers();
 
   // Ball in front of left tower
-  smartmove(20, 20, 180 + 45, 5000, false, true, MIN_XY_SPEED, MAX_XY_SPEED, MIN_ROT_SPEED, 70);
-  return;
-  vex::this_thread::sleep_for(250);
+  smartmove(29, 29, 180 + 45, 5000, false, true, MIN_XY_SPEED, MAX_XY_SPEED);
+  smartmove(25.7, 25.7, 180 + 45, 500, false, true, MIN_XY_SPEED, 70);
 
   // Left tower position
-  smartmove(19, 19, 0, 900, true, false);
+  smartmove(22, 22, 180 + 45, 900, true, true);
   vex::this_thread::sleep_for(300);
-  rollerThread = spinRollersForAsync(directionType::fwd, 1.5);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2.5);
   stopIntakes();
 
   smartmove(18, 17.5, 0, 500, false, false);
