@@ -69,6 +69,7 @@ float encBPrev = 0;
 #if SKILLS
 float posX = 35.3f; // X is left/right
 float posY = 0.0f; // Y is forwards/backwards
+#define AUTON_STARTING_ROTATION 0
 #else
 float posX = 67.0f;
 float posY = 7.0f;
@@ -494,7 +495,7 @@ float ERROR_THRESHOLD_ROT = 1; // Rotation error is in degrees
   const float MAX_ROT_SPEED = 50;
 #endif
 
-int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool stopOnBumperPress = false, bool doRotation = true, float minXYSpeed = MIN_XY_SPEED, float maxXYSpeed = MAX_XY_SPEED, float minRotSpeed = MIN_ROT_SPEED, float maxRotSpeed = MAX_ROT_SPEED, rotationSource rotationMode = rotationSource::inertial){
+int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool stopOnBumperPress = false, bool doRotation = true, float minXYSpeed = MIN_XY_SPEED, float maxXYSpeed = MAX_XY_SPEED, float minRotSpeed = MIN_ROT_SPEED, float maxRotSpeed = MAX_ROT_SPEED, float errorThresholdXY = ERROR_THRESHOLD_XY, float errorThresholdRot = ERROR_THRESHOLD_ROT){
   float errorXY = infinityf();
   float errorRot = infinityf();
   float rot = rotDeg * M_PI / 180;
@@ -512,11 +513,11 @@ int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool stopOnB
     float oldErrorXY = errorXY;
     float oldErrorRot = errorRot;
     float _currRot;
-    if(rotationMode == rotationSource::odometry){
+    if(ROTATION_SOURCE == rotationSource::odometry){
       _currRot = currRot;
-    } else if(rotationMode == rotationSource::inertial){
+    } else if(ROTATION_SOURCE == rotationSource::inertial){
       _currRot = Gyro.heading() * M_PI / 180;
-    } else if(rotationMode == rotationSource::average){
+    } else if(ROTATION_SOURCE == rotationSource::average){
       _currRot = ( (Gyro.heading() * M_PI / 180) + currRot ) / 2;
     }
     bool turnRight;
@@ -533,12 +534,12 @@ int smartmove(float x, float y, float rotDeg, float timeout = 5000, bool stopOnB
       errorRot = 360 - errorRot;
     }
     
-    if(errorXY < ERROR_THRESHOLD_XY && !hasCompletedTranslation){
+    if(errorXY < errorThresholdXY && !hasCompletedTranslation){
       hasCompletedTranslation = true;
     }
 
     // Dont allow rotation to stop until translation has completed
-    if(errorRot < ERROR_THRESHOLD_ROT && !hasCompletedRotation && hasCompletedTranslation){
+    if(errorRot < errorThresholdRot && !hasCompletedRotation && hasCompletedTranslation){
       hasCompletedRotation = true;
 #if DEBUG
       Controller.rumble(".");
@@ -863,41 +864,37 @@ void liveRemoteAutonomous(void){
 
   // Ball in front of left tower
   smartmove(29, 29, 180 + 45, 5000, false, true, MIN_XY_SPEED, MAX_XY_SPEED);
-  smartmove(25.7, 25.7, 180 + 45, 500, false, true, MIN_XY_SPEED, 70);
+  smartmove(27, 26, 180 + 45, 500, false, true, MIN_XY_SPEED, 70);
 
   // Left tower position
-  smartmove(22, 22, 180 + 45, 900, true, true);
+  smartmove(24, 22, 180 + 45, 900, true, true);
   vex::this_thread::sleep_for(300);
   rollerThread = spinRollersForAsync(directionType::fwd, 2.5);
   stopIntakes();
-
-  smartmove(18, 17.5, 0, 500, false, false);
-  // spinIntakes(directionType::rev);
+  smartmove(18, 17.5, 180 + 45, 500, true, true);
   rollerThread.join();
+  smartmove(24.5, 26, 180 + 90); // back up
 
-  smartmove(24.5, 26, 180);
-  IntakeL.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
-  IntakeR.startSpinFor(directionType::rev, AUTON_INTAKE_OPEN_POSITION + 10, rotationUnits::deg);
+  // Go to center tower
+  smartmove(48, 52, 0, 3000, false, true, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
+  // Push ball in from side
+  smartmove(59, 52, 0, 700);
+  // Back up
+  smartmove(49, 36, 0, 1000, false, false, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
+  
 
-  // Move right towards center tower
-  smartmove(70, 30, 180);
-  rollerThread = spinRollersForAsync(directionType::fwd, 3.3);
-  smartmove(70, 23.4, 180, 1000);
-  rollerThread.join();
-  
-  smartmove(70, 34, 180);
-  
+  // MEASURED: Touching right tower is at (121, 21)
   // Start facing right tower
-  smartmove(111, 18, 90 + 45, 10000, false, true, 6, 90, 10, 65);
+  smartmove(120, 28, 90 + 45, 10000, false, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(directionType::fwd);
-  smartmove(117, 7, 90 + 45, 600);
+  smartmove(124, 21, 90 + 45, 600, true);
   vex::this_thread::sleep_for(200);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
   spinIntakes(directionType::rev);
   
-  smartmove(106, 16, 90 + 45);
+  smartmove(113, 31, 90 + 45);
   stopIntakes();
   stopRollers();
 }
