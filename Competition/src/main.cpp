@@ -889,11 +889,12 @@ void liveRemoteAutonomous(void){
   spinRollers(directionType::fwd);
   spinIntakes(directionType::fwd);
   smartmove(124, 21, 90 + 45, 600, true);
-  vex::this_thread::sleep_for(200);
+  // vex::this_thread::sleep_for(200);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
-  spinIntakes(directionType::rev);
-  
+  // spinIntakes(directionType::rev);
+  stopIntakes();
+  return; // Fix: intakes were descoring a ball, so if we don't move back, it won't pull it out
   smartmove(113, 31, 90 + 45);
   stopIntakes();
   stopRollers();
