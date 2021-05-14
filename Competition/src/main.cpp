@@ -873,7 +873,7 @@ void liveRemoteAutonomous(void){
   stopIntakes();
   smartmove(18, 17.5, 180 + 45, 500, true, true);
   rollerThread.join();
-  smartmove(24.5, 26, 180 + 90); // back up
+  smartmove(24.5, 26, 180 + 90, 3000, false, true, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3); // back up
 
   // Go to center tower
   smartmove(48, 52, 0, 3000, false, true, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
@@ -888,7 +888,7 @@ void liveRemoteAutonomous(void){
   smartmove(120, 28, 90 + 45, 10000, false, true, 6, 90, 10, 65);
   spinRollers(directionType::fwd);
   spinIntakes(directionType::fwd);
-  smartmove(124, 21, 90 + 45, 600, true);
+  smartmove(124, 19, 90 + 45, 1000, true);
   // vex::this_thread::sleep_for(200);
   stopIntakes();
   vex::this_thread::sleep_for(1200);
