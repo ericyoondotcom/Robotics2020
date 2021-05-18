@@ -814,7 +814,7 @@ void usercontrol(void) {
 #if SKILLS
     const int TIME_NOTIF = 50000;
 #else
-    const int TIME_NOTIF = 95000;
+    const int TIME_NOTIF = 75000;
 #endif
     if(!timeNotifSounded && t > TIME_NOTIF){ // 10secs left notification
       Controller.rumble(".....");
@@ -857,10 +857,11 @@ void liveRemoteAutonomous(void){
   currRot = (AUTON_STARTING_ROTATION / 180.0f) * M_PI;
 
   thread rollerThread;
-  spinRollers(directionType::fwd);
+  RollerB.spin(directionType::rev, ROLLER_SPEED_FWD, velocityUnits::pct);
+  RollerF.spin(directionType::rev, ROLLER_SPEED_FWD, velocityUnits::pct);
   vex::this_thread::sleep_for(300);
-  spinIntakes(directionType::fwd);
   stopRollers();
+  spinIntakes(directionType::fwd);
 
   // Ball in front of left tower
   smartmove(29, 29, 180 + 45, 5000, false, true, MIN_XY_SPEED, MAX_XY_SPEED);
@@ -875,10 +876,15 @@ void liveRemoteAutonomous(void){
   rollerThread.join();
   smartmove(24.5, 26, 180 + 90, 3000, false, true, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3); // back up
 
+#if RED_TEAM
   // Go to center tower
-  smartmove(48, 52, 0, 3000, false, true, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
+  smartmove(49, 52, 0, 3000, false, true, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
   // Push ball in from side
   smartmove(59, 52, 0, 700);
+#else
+  smartmove(51, 52, 0, 3000, false, true, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
+  smartmove(61, 52, 0, 700);
+#endif
   // Back up
   smartmove(49, 36, 0, 1000, false, false, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
   
