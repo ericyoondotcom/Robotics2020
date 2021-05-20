@@ -11,7 +11,7 @@ using namespace vex;
 #define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS false
 #define LIVE_REMOTE true
-#define RED_TEAM true
+#define RED_TEAM false
 // ************
 
 #define ENCODER_L_DIST 3.75
@@ -868,9 +868,9 @@ void liveRemoteAutonomous(void){
   smartmove(27, 26, 180 + 45, 500, false, true, MIN_XY_SPEED, 70);
 
   // Left tower position
-  smartmove(24, 22, 180 + 45, 900, true, true);
+  smartmove(23, 23, 180 + 45, 900, true, true);
   vex::this_thread::sleep_for(300);
-  rollerThread = spinRollersForAsync(directionType::fwd, 2.5);
+  rollerThread = spinRollersForAsync(directionType::fwd, 2);
   stopIntakes();
   smartmove(18, 17.5, 180 + 45, 500, true, true);
   rollerThread.join();
@@ -886,7 +886,7 @@ void liveRemoteAutonomous(void){
   smartmove(61, 52, 0, 700);
 #endif
   // Back up
-  smartmove(49, 36, 0, 1000, false, false, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
+  smartmove(57, 36, 0, 1000, false, false, 15, MAX_XY_SPEED, MIN_ROT_SPEED, MAX_ROT_SPEED, ERROR_THRESHOLD_XY * 3);
   
 
   // MEASURED: Touching right tower is at (121, 21)
