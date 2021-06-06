@@ -11,7 +11,7 @@ using namespace vex;
 #define AUTON_NOT_PRELOADED false // Set to true if you're too lazy to tie back the arms for auton
 #define SKILLS false
 #define LIVE_REMOTE true
-#define RED_TEAM false
+#define RED_TEAM true
 // ************
 
 #define ENCODER_L_DIST 3.75
@@ -46,13 +46,13 @@ competition Competition;
 brain Brain;
 controller Controller;
 
-motor MotorA = motor(PORT12, ratio18_1, false); // Front Left
+motor MotorA = motor(PORT13, ratio18_1, false); // Front Left
 motor MotorB = motor(PORT7, ratio18_1, true); // Back Left
 motor MotorC = motor(PORT2, ratio18_1, true); // Back Right
 motor MotorD = motor(PORT6, ratio18_1, false); // Front Right
 motor IntakeL = motor(PORT11, ratio18_1, false);
 motor IntakeR = motor(PORT1, ratio18_1, true);
-motor RollerF = motor(PORT13, ratio18_1, true);
+motor RollerF = motor(PORT14, ratio18_1, true);
 motor RollerB = motor(PORT10, ratio18_1, false);
 inertial Gyro = inertial(PORT9);
 encoder EncoderR = encoder(Brain.ThreeWirePort.C);
